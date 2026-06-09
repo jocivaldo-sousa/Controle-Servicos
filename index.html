@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DashControler - EMBASA</title>
+    <title>DashControler - EMBASA (Cloud)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Biblioteca para gerar PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -21,11 +21,22 @@
         .active-tab { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Proteção para quebras de página no PDF */
+        /* Proteção e Quebras Estritas para o PDF */
         .avoid-break { page-break-inside: avoid; break-inside: avoid; }
+        .pdf-page-break { page-break-after: always; height: 0; margin: 0; border: none; overflow: hidden; }
     </style>
 </head>
 <body class="font-sans text-gray-800 dark:text-gray-200 bg-[#f8fafc] dark:bg-gray-900 relative min-h-screen">
+
+    <!-- Tela de Carregamento da Nuvem -->
+    <div id="cloud-loader" class="fixed inset-0 bg-[#f8fafc] dark:bg-gray-900 z-[100] flex flex-col items-center justify-center transition-opacity duration-500">
+        <svg class="animate-spin h-16 w-16 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p class="text-xl font-black text-blue-800 dark:text-blue-400 animate-pulse">A Conectar à Nuvem...</p>
+        <p class="text-sm text-gray-500 mt-2">Sincronizando banco de dados</p>
+    </div>
 
     <!-- Script de Inicialização Rápida do Tema -->
     <script>
@@ -58,9 +69,17 @@
     <!-- MENU DE NAVEGAÇÃO -->
     <nav class="bg-blue-700 dark:bg-gray-950 text-white shadow-lg p-4 sticky top-0 z-40 transition-colors">
         <div class="max-w-[98%] mx-auto flex flex-col xl:flex-row justify-between items-center gap-4 xl:gap-0">
-            <div class="text-center xl:text-left">
-                <h1 class="text-2xl font-black tracking-tight text-white">DashControler <span class="text-orange-400 text-sm align-top">v1.2</span></h1>
-                <p class="text-xs text-blue-200 dark:text-gray-400 font-medium">By Jocivaldo Sousa</p>
+            <div class="text-center xl:text-left flex items-center gap-3">
+                <div>
+                    <h1 class="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                        DashControler <span class="text-orange-400 text-sm align-top">v1.3</span>
+                        <span title="Conectado à Nuvem" class="flex h-3 w-3 relative ml-1">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                        </span>
+                    </h1>
+                    <p class="text-xs text-blue-200 dark:text-gray-400 font-medium">By Jocivaldo Sousa</p>
+                </div>
             </div>
             <div class="space-x-1 flex flex-wrap justify-center items-center gap-y-2">
                 <button onclick="showTab('dashboard')" class="px-3 py-2 rounded hover:bg-blue-800 dark:hover:bg-gray-800 transition-colors font-semibold text-sm">Dashboard</button>
@@ -70,9 +89,9 @@
                 <button onclick="showTab('historico')" class="px-3 py-2 rounded hover:bg-blue-800 dark:hover:bg-gray-800 transition-colors font-semibold text-sm">Histórico</button>
                 <button onclick="showTab('relatorios')" class="px-3 py-2 rounded hover:bg-blue-800 dark:hover:bg-gray-800 transition-colors font-bold text-sm text-green-300 border border-transparent hover:border-green-400">Relatórios</button>
                 <div class="inline-block border-l border-blue-500 dark:border-gray-700 pl-3 ml-1 space-x-2 flex items-center">
-                    <button onclick="exportData()" class="bg-orange-500 hover:bg-orange-600 px-3 py-2 rounded text-sm font-bold shadow transition-transform active:scale-95">Backup</button>
+                    <button onclick="exportData()" class="bg-orange-500 hover:bg-orange-600 px-3 py-2 rounded text-sm font-bold shadow transition-transform active:scale-95" title="Baixar JSON da Nuvem">Backup</button>
                     <input type="file" id="importFile" class="hidden" accept=".json" onchange="handleFileSelect(event)">
-                    <button onclick="document.getElementById('importFile').click()" class="bg-green-600 hover:bg-green-500 px-3 py-2 rounded text-sm font-bold shadow transition-transform active:scale-95">Restore</button>
+                    <button onclick="document.getElementById('importFile').click()" class="bg-green-600 hover:bg-green-500 px-3 py-2 rounded text-sm font-bold shadow transition-transform active:scale-95" title="Enviar JSON para Nuvem">Migrar (Upload)</button>
                     
                     <button onclick="toggleTheme()" class="ml-2 bg-gray-800 dark:bg-yellow-500 text-white dark:text-gray-900 w-9 h-9 rounded-full font-black shadow-inner transition-transform active:scale-90 flex items-center justify-center text-lg border border-gray-600 dark:border-yellow-400" title="Alternar Dia/Noite">
                         <span id="theme-icon">🌙</span>
@@ -108,7 +127,6 @@
                 </div>
             </div>
             
-            <!-- NOVA SESSÃO: ÚLTIMOS LANÇAMENTOS NO DASHBOARD -->
             <div class="mt-8">
                 <h3 class="text-xl font-bold mb-4 text-blue-800 dark:text-blue-400 border-b border-gray-200 dark:border-gray-700 pb-2">Últimos Lançamentos</h3>
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto w-full">
@@ -122,7 +140,6 @@
                             </tr>
                         </thead>
                         <tbody id="table-recentes" class="divide-y divide-gray-200 dark:divide-gray-700 text-gray-700 dark:text-gray-300">
-                            <!-- Gerado via JS -->
                         </tbody>
                     </table>
                 </div>
@@ -152,7 +169,7 @@
                     <input type="number" step="0.01" id="code-price" placeholder="0.00" required class="w-full border dark:border-gray-600 p-3 rounded bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 outline-none transition-colors dark:text-white">
                 </div>
                 
-                <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white p-3 rounded-lg col-span-1 md:col-span-2 font-black shadow-md mt-2 transition-colors">Salvar / Atualizar Código</button>
+                <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white p-3 rounded-lg col-span-1 md:col-span-2 font-black shadow-md mt-2 transition-colors">Salvar / Atualizar Código na Nuvem</button>
             </form>
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-x-auto max-w-4xl">
                 <table class="w-full text-left border-collapse">
@@ -164,13 +181,11 @@
             </div>
         </div>
 
-        <!-- ABA: CADASTROS AUXILIARES (EQUIPES E ENDEREÇOS) -->
+        <!-- ABA: CADASTROS AUXILIARES -->
         <div id="tab-auxiliares" class="hidden-tab">
             <h2 class="text-2xl font-extrabold mb-6 text-blue-800 dark:text-blue-400 border-b border-gray-200 dark:border-gray-700 pb-2">Cadastros Auxiliares</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl">
-                
-                <!-- Gerir Equipas -->
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                     <h3 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-200">Equipes Responsáveis</h3>
                     <div class="flex gap-2 mb-4">
@@ -179,13 +194,12 @@
                     </div>
                     <div class="border dark:border-gray-700 rounded overflow-hidden">
                         <table class="w-full text-sm text-left">
-                            <thead class="bg-gray-50 dark:bg-gray-700"><tr><th class="p-2">Nome da Equipa</th><th class="p-2 text-center w-24">Ação</th></tr></thead>
+                            <thead class="bg-gray-50 dark:bg-gray-700"><tr><th class="p-2">Nome da Equipa</th><th class="p-2 text-center w-32">Ações</th></tr></thead>
                             <tbody id="table-teams" class="divide-y divide-gray-100 dark:divide-gray-700"></tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- Gerir Endereços -->
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                     <h3 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-200">Endereços Frequentes</h3>
                     <div class="flex gap-2 mb-4">
@@ -194,16 +208,15 @@
                     </div>
                     <div class="border dark:border-gray-700 rounded overflow-hidden">
                         <table class="w-full text-sm text-left">
-                            <thead class="bg-gray-50 dark:bg-gray-700"><tr><th class="p-2">Endereço Completo</th><th class="p-2 text-center w-24">Ação</th></tr></thead>
+                            <thead class="bg-gray-50 dark:bg-gray-700"><tr><th class="p-2">Endereço Completo</th><th class="p-2 text-center w-32">Ações</th></tr></thead>
                             <tbody id="table-addresses" class="divide-y divide-gray-100 dark:divide-gray-700"></tbody>
                         </table>
                     </div>
                 </div>
-
             </div>
         </div>
 
-        <!-- ABA: NOVO LANÇAMENTO (COM SELECTS DE EQUIPE E ENDEREÇO) -->
+        <!-- ABA: NOVO LANÇAMENTO -->
         <div id="tab-lancamentos" class="active-tab">
             <div class="max-w-4xl mx-auto">
                 <h2 class="text-xl font-extrabold mb-4 text-blue-800 dark:text-blue-400 border-b border-gray-200 dark:border-gray-700 pb-2">Registo de Nova SS</h2>
@@ -214,7 +227,7 @@
                         <input type="date" id="launch-date" required class="w-full border dark:border-gray-600 p-1.5 rounded bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 outline-none dark:text-white dark:[color-scheme:dark]">
                     </div>
                     <div>
-                        <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-0.5">Equipa Responsável (Selecione)</label>
+                        <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-0.5">Equipa Responsável</label>
                         <select id="launch-team" required class="w-full border dark:border-gray-600 p-1.5 rounded bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 outline-none dark:text-white">
                             <option value="">Selecione uma equipa...</option>
                         </select>
@@ -238,13 +251,12 @@
                     </div>
 
                     <div class="col-span-1 md:col-span-2">
-                        <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-0.5">Endereço Completo (Selecione)</label>
+                        <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-0.5">Endereço Completo</label>
                         <select id="launch-addr" required class="w-full border dark:border-gray-600 p-1.5 rounded bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600 focus:border-blue-500 outline-none dark:text-white">
                             <option value="">Selecione um endereço...</option>
                         </select>
                     </div>
                     
-                    <!-- SEÇÃO DE ITENS -->
                     <div class="col-span-1 md:col-span-2 mt-2 pt-3 border-t border-gray-200 dark:border-gray-700">
                         <div class="bg-blue-50 dark:bg-gray-700/50 p-3 rounded-lg border border-blue-100 dark:border-gray-600">
                             <label class="block text-[11px] font-black mb-1 text-blue-800 dark:text-blue-300 uppercase tracking-wide">1. Escolha o Código / Serviço</label>
@@ -252,7 +264,6 @@
                             <div class="flex gap-2 mb-2">
                                 <input type="text" id="search-code" oninput="filterCodes()" placeholder="Digite a descrição ou código..." class="flex-1 border dark:border-gray-600 p-1.5 rounded bg-white dark:bg-gray-700 focus:border-blue-500 outline-none shadow-sm dark:text-white">
                                 <button type="button" onclick="filterCodes()" class="bg-blue-700 hover:bg-blue-800 text-white px-3 py-1.5 rounded font-bold shadow-sm transition-colors flex items-center gap-1 text-xs">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
                                     Pesquisar
                                 </button>
                             </div>
@@ -260,12 +271,9 @@
                             <select id="launch-code" onchange="onCodeSelect()" class="w-full border dark:border-gray-600 p-1.5 rounded bg-white dark:bg-gray-700 focus:border-blue-500 outline-none shadow-sm font-medium text-blue-900 dark:text-blue-300"></select>
                             
                             <label class="block text-[11px] font-black mt-3 mb-1 text-blue-800 dark:text-blue-300 uppercase tracking-wide">2. Informe as Dimensões / Quantidade</label>
-                            <div id="dyn-fields" class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3">
-                                <!-- Campos dinâmicos aparecem aqui -->
-                            </div>
+                            <div id="dyn-fields" class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3"></div>
                             
                             <button type="button" id="btn-add-item" onclick="addItemToLaunch()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-black shadow transition-transform active:scale-[0.99] flex justify-center items-center gap-2 text-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
                                 Adicionar Item à Lista
                             </button>
                         </div>
@@ -299,8 +307,8 @@
                 </form>
                 
                 <div class="mt-4 flex flex-col md:flex-row gap-3">
-                    <button type="button" onclick="clearLaunchForm()" class="md:w-1/4 bg-gray-400 hover:bg-gray-500 dark:bg-gray-600 dark:hover:bg-gray-500 text-white p-2 rounded font-bold shadow transition-colors text-sm">Limpar Formulário</button>
-                    <button type="button" id="btn-save-launch" onclick="saveFullLaunch()" class="md:w-3/4 bg-green-600 hover:bg-green-700 text-white p-2 rounded font-black text-base shadow-lg transition-transform active:scale-[0.99]">💾 GRAVAR LANÇAMENTO</button>
+                    <button type="button" onclick="clearLaunchForm()" class="md:w-1/4 bg-gray-400 hover:bg-gray-500 text-white p-2 rounded font-bold shadow text-sm">Limpar Formulário</button>
+                    <button type="button" id="btn-save-launch" onclick="saveFullLaunch()" class="md:w-3/4 bg-green-600 hover:bg-green-700 text-white p-2 rounded font-black text-base shadow-lg">💾 GRAVAR NA NUVEM</button>
                 </div>
             </div>
         </div>
@@ -310,8 +318,8 @@
             <h2 class="text-2xl font-extrabold mb-6 text-blue-800 dark:text-blue-400 border-b border-gray-200 dark:border-gray-700 pb-2">Pesquisa e Histórico</h2>
             
             <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6 flex flex-col md:flex-row gap-3 w-full">
-                <input type="text" id="search-hist" oninput="updateHistoryTable()" placeholder="Digite data, SS, fiscal, código, status..." class="flex-1 border dark:border-gray-600 p-3 rounded-lg outline-none focus:border-blue-500 bg-gray-50 dark:bg-gray-700 dark:text-white focus:bg-white dark:focus:bg-gray-600 transition-colors">
-                <button onclick="clearHistoryFilter()" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-bold shadow transition-colors whitespace-nowrap">Limpar Busca</button>
+                <input type="text" id="search-hist" oninput="updateHistoryTable()" placeholder="Digite data, SS, fiscal, código, status..." class="flex-1 border dark:border-gray-600 p-3 rounded-lg outline-none focus:border-blue-500 bg-gray-50 dark:bg-gray-700 dark:text-white focus:bg-white">
+                <button onclick="clearHistoryFilter()" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-bold shadow whitespace-nowrap">Limpar Busca</button>
             </div>
             
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto w-full">
@@ -340,7 +348,6 @@
         <div id="tab-relatorios" class="hidden-tab">
             <h2 class="text-2xl font-extrabold mb-6 text-blue-800 dark:text-blue-400 border-b border-gray-200 dark:border-gray-700 pb-2">Relatórios do Sistema</h2>
             
-            <!-- Filtros de Relatório -->
             <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
                 <div class="col-span-1 md:col-span-2 lg:col-span-2">
                     <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Tipo de Relatório</label>
@@ -374,92 +381,129 @@
                     <input type="text" id="rel-code" placeholder="Filtrar por Código/Desc..." class="w-full border dark:border-gray-600 p-2 rounded bg-gray-50 dark:bg-gray-700 focus:border-blue-500 outline-none dark:text-white">
                 </div>
                 <div class="col-span-1 md:col-span-2 lg:col-span-6 flex gap-2 w-full mt-2">
-                    <button onclick="gerarRelatorio(false)" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded font-bold shadow transition-colors flex-1 flex justify-center items-center gap-2 text-sm">
+                    <button onclick="gerarRelatorio(false)" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded font-bold shadow flex-1 flex justify-center items-center gap-2 text-sm">
                         👁️ Visualizar Relatório
                     </button>
-                    <button onclick="gerarRelatorio(true)" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded font-bold shadow transition-colors flex-1 flex justify-center items-center gap-2 text-sm">
+                    <button onclick="gerarRelatorio(true)" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded font-bold shadow flex-1 flex justify-center items-center gap-2 text-sm">
                         📄 Baixar PDF
                     </button>
                 </div>
             </div>
 
-            <!-- Área de Impressão / Pré-visualização -->
-            <div class="bg-gray-200 dark:bg-gray-800 p-4 md:p-8 rounded-xl shadow-inner overflow-x-auto flex justify-center">
-                <div id="report-print-area" class="bg-white text-black p-8 shadow-md w-full max-w-[210mm] min-h-[297mm]">
+            <div class="bg-gray-200 dark:bg-gray-800 p-4 md:p-8 rounded-xl shadow-inner overflow-auto flex justify-center">
+                <div id="report-print-area" class="bg-white text-black p-8 shadow-md w-full min-h-[297mm]">
                     <div class="text-center text-gray-400 italic mt-20 flex flex-col items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                        Preencha o período acima e clique em "Visualizar" para gerar o relatório sintético.
+                        Preencha o período acima e clique em "Visualizar" para gerar o relatório.
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <script>
-        // TEMA (DIA/NOITE)
-        function toggleTheme() {
+    <!-- MOTOR FIREBASE E LÓGICA DA APLICAÇÃO -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // Configuração Firebase Exclusiva do Usuário
+        const firebaseConfig = {
+            apiKey: "AIzaSyDaLvrA9WyZSx5hbFoZjnw0lPwuRaBZclM",
+            authDomain: "dashcontroler.firebaseapp.com",
+            projectId: "dashcontroler",
+            storageBucket: "dashcontroler.firebasestorage.app",
+            messagingSenderId: "342390953568",
+            appId: "1:342390953568:web:4f68dd60e2104f20f21505"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const firestore = getFirestore(app);
+
+        // Banco de Dados em Memória (Sincronizado com a nuvem)
+        window.db = { codes: [], launches: [], teams: [], addresses: [] };
+
+        // Variáveis de Controlo de Carregamento
+        let loaded = { aux: false, codes: false, launches: false };
+        function checkCloudReady() {
+            if (loaded.aux && loaded.codes && loaded.launches) {
+                const loader = document.getElementById('cloud-loader');
+                if (loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => loader.remove(), 500);
+                }
+            }
+        }
+
+        // ==========================================
+        // SINCRONIZAÇÃO EM TEMPO REAL (LISTENERS)
+        // ==========================================
+        
+        // 1. Ouvir Cadastros Auxiliares (Equipes e Endereços agrupados num único documento para poupar leituras)
+        const docAux = doc(firestore, 'auxiliares', 'dados');
+        onSnapshot(docAux, (snapshot) => {
+            if (snapshot.exists()) {
+                window.db.teams = snapshot.data().teams || [];
+                window.db.addresses = snapshot.data().addresses || [];
+            } else {
+                setDoc(docAux, { teams: [], addresses: [] }); // Cria a estrutura se não existir
+            }
+            loaded.aux = true; checkCloudReady(); window.updateUI();
+        });
+
+        // 2. Ouvir Códigos de Serviço
+        const colCodes = collection(firestore, 'codes');
+        onSnapshot(colCodes, (snapshot) => {
+            window.db.codes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            loaded.codes = true; checkCloudReady(); window.updateUI();
+        });
+
+        // 3. Ouvir Lançamentos de SS
+        const colLaunches = collection(firestore, 'launches');
+        onSnapshot(colLaunches, (snapshot) => {
+            window.db.launches = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            loaded.launches = true; checkCloudReady(); window.updateUI();
+        });
+
+
+        // ==========================================
+        // FUNÇÕES GLOBAIS (Expostas para o HTML)
+        // ==========================================
+
+        window.toggleTheme = function() {
             document.documentElement.classList.toggle('dark');
             const isDark = document.documentElement.classList.contains('dark');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            updateThemeIcon(isDark);
+            window.updateThemeIcon(isDark);
         }
 
-        function updateThemeIcon(isDark) {
+        window.updateThemeIcon = function(isDark) {
             const icon = document.getElementById('theme-icon');
             if(icon) icon.innerText = isDark ? '☀️' : '🌙';
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            const isDark = document.documentElement.classList.contains('dark');
-            updateThemeIcon(isDark);
-        });
-
-        function escapeHTML(str) {
+        window.escapeHTML = function(str) {
             if (str === null || str === undefined) return '';
             return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // BANCO DE DADOS (Iniciando Arrays vazias para segurança)
-        let db = JSON.parse(localStorage.getItem('embasa_db')) || { codes: [], launches: [], teams: [], addresses: [] };
-        if(!Array.isArray(db.codes)) db.codes = [];
-        if(!Array.isArray(db.launches)) db.launches = [];
-        if(!Array.isArray(db.teams)) db.teams = [];
-        if(!Array.isArray(db.addresses)) db.addresses = [];
-
-        // Proteção de ID antigo
-        let _idSet = new Set();
-        let _dbChanged = false;
-        db.launches.forEach(l => {
-            if (_idSet.has(l.id) || !l.id) {
-                l.id = Date.now() + Math.floor(Math.random() * 100000); 
-                _dbChanged = true;
-            }
-            _idSet.add(l.id);
-        });
-        if(_dbChanged) localStorage.setItem('embasa_db', JSON.stringify(db));
-
-        // NAVEGAÇÃO ENTRE ABAS COM PROTEÇÃO
-        function showTab(tab) {
+        window.showTab = function(tab) {
             const tabs = ['dashboard', 'cadastros', 'auxiliares', 'lancamentos', 'historico', 'relatorios'];
             tabs.forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
                 if (el) {
                     if (t === tab) {
-                        el.classList.remove('hidden-tab');
-                        el.classList.add('active-tab');
+                        el.classList.remove('hidden-tab'); el.classList.add('active-tab');
                     } else {
-                        el.classList.add('hidden-tab');
-                        el.classList.remove('active-tab');
+                        el.classList.add('hidden-tab'); el.classList.remove('active-tab');
                     }
                 }
             });
             window.scrollTo(0,0);
         }
 
-        // NOTIFICAÇÕES (TOAST)
-        function showToast(message, type = 'info') {
+        window.showToast = function(message, type = 'info') {
             const container = document.getElementById('toast-container');
             if(!container) return;
             const toast = document.createElement('div');
@@ -468,7 +512,7 @@
             if(type === 'error') bgColor = 'bg-red-600 dark:bg-red-700';
             if(type === 'warning') bgColor = 'bg-orange-500 dark:bg-orange-600';
 
-            toast.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-xl mb-3 font-bold text-sm transform transition-all duration-300 translate-x-full opacity-0 flex items-center gap-2 border border-black/10 dark:border-white/10`;
+            toast.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-xl mb-3 font-bold text-sm transform transition-all duration-300 translate-x-full opacity-0 flex items-center gap-2`;
             let icon = type==='success' ? '✅ ' : type==='error' ? '❌ ' : type==='warning' ? '⚠️ ' : 'ℹ️ ';
             toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
             
@@ -480,614 +524,526 @@
             }, 3500);
         }
 
-        function saveData() { 
-            localStorage.setItem('embasa_db', JSON.stringify(db)); 
-            updateUI(); 
-        }
+        // ==========================================
+        // ESCRITA NA NUVEM (CRUD MIGRADO PARA O FIRESTORE)
+        // ==========================================
 
-        /* --------------------------------------------------------
-           NOVO MÓDULO: CADASTROS AUXILIARES (EQUIPAS E ENDEREÇOS)
-           -------------------------------------------------------- */
-        
-        function addTeam() {
+        window.addTeam = async function() {
             const val = document.getElementById('new-team-input').value.trim();
-            if(!val) return showToast('Preencha o nome da equipe!', 'warning');
-            if(db.teams.includes(val)) return showToast('Esta equipe já está cadastrada.', 'error');
+            if(!val) return window.showToast('Preencha o nome!', 'warning');
+            if(window.db.teams.includes(val)) return window.showToast('Já cadastrado.', 'error');
             
-            db.teams.push(val);
-            db.teams.sort(); // Mantém a lista alfabética
-            saveData();
-            document.getElementById('new-team-input').value = '';
-            showToast('Equipa adicionada com sucesso!', 'success');
+            const newTeams = [...window.db.teams, val].sort();
+            try {
+                await setDoc(docAux, { teams: newTeams }, { merge: true });
+                document.getElementById('new-team-input').value = ''; 
+                window.showToast('Equipe salva na Nuvem!', 'success');
+            } catch (error) { window.showToast('Erro ao salvar.', 'error'); console.error(error); }
         }
 
-        function deleteTeam(index) {
-            if(confirm('Pretende remover esta equipa do sistema?')) {
-                db.teams.splice(index, 1);
-                saveData();
-                showToast('Equipa removida.', 'success');
+        window.deleteTeam = async function(index) {
+            if(confirm('Remover esta equipe permanentemente?')) { 
+                const newTeams = [...window.db.teams]; newTeams.splice(index, 1);
+                await setDoc(docAux, { teams: newTeams }, { merge: true });
+                window.showToast('Removido da Nuvem.', 'success'); 
             }
         }
 
-        function addAddress() {
+        window.editTeam = async function(index) {
+            const oldName = window.db.teams[index];
+            const newName = prompt("Alterar nome da equipe:", oldName);
+            
+            // Se o usuário cancelar, deixar vazio, ou não mudar nada, aborta a ação
+            if (newName === null || newName.trim() === "" || newName.trim() === oldName) return;
+            
+            const finalName = newName.trim();
+            // Verifica se a nova equipe já existe
+            if (window.db.teams.includes(finalName)) return window.showToast('Esta equipe já existe!', 'error');
+
+            const newTeams = [...window.db.teams];
+            newTeams[index] = finalName;
+            newTeams.sort(); // Mantém a ordem alfabética limpa no banco
+
+            try {
+                await setDoc(docAux, { teams: newTeams }, { merge: true });
+                window.showToast('Equipe alterada na Nuvem!', 'success');
+            } catch (error) { window.showToast('Erro ao alterar.', 'error'); console.error(error); }
+        }
+
+        window.addAddress = async function() {
             const val = document.getElementById('new-addr-input').value.trim();
-            if(!val) return showToast('Preencha o endereço completo!', 'warning');
-            if(db.addresses.includes(val)) return showToast('Este endereço já está cadastrado.', 'error');
+            if(!val) return window.showToast('Preencha!', 'warning');
+            if(window.db.addresses.includes(val)) return window.showToast('Já cadastrado.', 'error');
             
-            db.addresses.push(val);
-            db.addresses.sort(); // Mantém a lista alfabética
-            saveData();
-            document.getElementById('new-addr-input').value = '';
-            showToast('Endereço adicionado com sucesso!', 'success');
+            const newAddrs = [...window.db.addresses, val].sort();
+            try {
+                await setDoc(docAux, { addresses: newAddrs }, { merge: true });
+                document.getElementById('new-addr-input').value = ''; 
+                window.showToast('Endereço salvo na Nuvem!', 'success');
+            } catch (error) { window.showToast('Erro ao salvar.', 'error'); }
         }
 
-        function deleteAddress(index) {
-            if(confirm('Pretende remover este endereço do sistema?')) {
-                db.addresses.splice(index, 1);
-                saveData();
-                showToast('Endereço removido.', 'success');
-            }
-        }
-
-        function renderAux() {
-            const tableTeams = document.getElementById('table-teams');
-            if(tableTeams) {
-                if(db.teams.length === 0) {
-                    tableTeams.innerHTML = '<tr><td colspan="2" class="p-4 text-center text-gray-400 italic">Nenhuma equipa registada.</td></tr>';
-                } else {
-                    tableTeams.innerHTML = db.teams.map((t, i) => `
-                        <tr class="hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                            <td class="p-2 font-medium">${escapeHTML(t)}</td>
-                            <td class="p-2 text-center"><button onclick="deleteTeam(${i})" class="text-red-500 hover:text-red-700 font-bold">Excluir</button></td>
-                        </tr>
-                    `).join('');
-                }
-            }
-
-            const tableAddrs = document.getElementById('table-addresses');
-            if(tableAddrs) {
-                if(db.addresses.length === 0) {
-                    tableAddrs.innerHTML = '<tr><td colspan="2" class="p-4 text-center text-gray-400 italic">Nenhum endereço registado.</td></tr>';
-                } else {
-                    tableAddrs.innerHTML = db.addresses.map((a, i) => `
-                        <tr class="hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                            <td class="p-2 font-medium">${escapeHTML(a)}</td>
-                            <td class="p-2 text-center"><button onclick="deleteAddress(${i})" class="text-red-500 hover:text-red-700 font-bold">Excluir</button></td>
-                        </tr>
-                    `).join('');
-                }
-            }
-
-            const selectTeam = document.getElementById('launch-team');
-            if(selectTeam) {
-                const currentTeam = selectTeam.value;
-                selectTeam.innerHTML = '<option value="">Selecione uma equipa...</option>' + 
-                    db.teams.map(t => `<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join('');
-                if(db.teams.includes(currentTeam)) selectTeam.value = currentTeam; 
-            }
-
-            const selectAddr = document.getElementById('launch-addr');
-            if(selectAddr) {
-                const currentAddr = selectAddr.value;
-                selectAddr.innerHTML = '<option value="">Selecione um endereço...</option>' + 
-                    db.addresses.map(a => `<option value="${escapeHTML(a)}">${escapeHTML(a)}</option>`).join('');
-                if(db.addresses.includes(currentAddr)) selectAddr.value = currentAddr; 
-            }
-
-            const relTeam = document.getElementById('rel-equipe');
-            if(relTeam) {
-                const currentRelTeam = relTeam.value;
-                relTeam.innerHTML = '<option value="">Todas as Equipes...</option>' + 
-                    db.teams.map(t => `<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join('');
-                if(db.teams.includes(currentRelTeam)) relTeam.value = currentRelTeam;
-            }
-
-            const relAddr = document.getElementById('rel-addr');
-            if(relAddr) {
-                const currentRelAddr = relAddr.value;
-                relAddr.innerHTML = '<option value="">Todos os Endereços...</option>' + 
-                    db.addresses.map(a => `<option value="${escapeHTML(a)}">${escapeHTML(a)}</option>`).join('');
-                if(db.addresses.includes(currentRelAddr)) relAddr.value = currentRelAddr;
+        window.deleteAddress = async function(index) {
+            if(confirm('Remover endereço permanentemente?')) { 
+                const newAddrs = [...window.db.addresses]; newAddrs.splice(index, 1);
+                await setDoc(docAux, { addresses: newAddrs }, { merge: true });
+                window.showToast('Removido da Nuvem.', 'success'); 
             }
         }
 
+        window.editAddress = async function(index) {
+            const oldAddr = window.db.addresses[index];
+            const newAddr = prompt("Alterar endereço completo:", oldAddr);
+            
+            if (newAddr === null || newAddr.trim() === "" || newAddr.trim() === oldAddr) return;
+            
+            const finalAddr = newAddr.trim();
+            if (window.db.addresses.includes(finalAddr)) return window.showToast('Este endereço já existe!', 'error');
 
-        /* --------------------------------------------------------
-           MÓDULO: CADASTRO DE CÓDIGOS E SERVIÇOS
-           -------------------------------------------------------- */
+            const newAddrs = [...window.db.addresses];
+            newAddrs[index] = finalAddr;
+            newAddrs.sort();
 
-        function updateUnitDatalist() {
-            const dataList = document.getElementById('unit-options');
-            if(!dataList) return;
-            const defaultUnits = ['und', 'm2', 'm3', 'm', 'pç'];
-            const customUnits = db.codes.map(c => (c.unit || '').toLowerCase().trim()).filter(u => u && !defaultUnits.includes(u));
-            const allUnits = [...new Set([...defaultUnits, ...customUnits])];
-            dataList.innerHTML = allUnits.map(u => `<option value="${escapeHTML(u)}">`).join('');
+            try {
+                await setDoc(docAux, { addresses: newAddrs }, { merge: true });
+                window.showToast('Endereço alterado na Nuvem!', 'success');
+            } catch (error) { window.showToast('Erro ao alterar.', 'error'); console.error(error); }
         }
 
-        function addCode(e) {
+        window.addCode = async function(e) {
             e.preventDefault();
-            const idx = parseInt(document.getElementById('edit-index').value);
+            const originalId = document.getElementById('edit-index').value;
+            const isEdit = originalId !== "-1";
+            
+            const codeIdStr = String(document.getElementById('code-id').value).toUpperCase();
             const newCode = {
-                id: String(document.getElementById('code-id').value).toUpperCase(),
                 desc: String(document.getElementById('code-desc').value),
                 unit: document.getElementById('code-unit').value,
                 price: document.getElementById('code-price').value
             };
-            
-            if(idx === -1 && db.codes.some(c => c.id === newCode.id)) {
-                return showToast('Este Código já está cadastrado!', 'error');
-            }
 
-            if(idx > -1) {
-                db.codes[idx] = newCode; 
-                showToast('Código atualizado!', 'success');
-            } else {
-                db.codes.push(newCode);
-                showToast('Novo código cadastrado!', 'success');
-            }
-            
-            document.getElementById('edit-index').value = -1;
-            e.target.reset();
-            saveData();
+            if(!isEdit && window.db.codes.some(c => c.id === codeIdStr)) return window.showToast('Código já existe!', 'error');
+
+            try {
+                // No Firestore, o ID do documento será o próprio Código do Serviço
+                await setDoc(doc(firestore, 'codes', codeIdStr), newCode);
+                
+                document.getElementById('edit-index').value = -1; 
+                e.target.reset(); 
+                window.showToast('Código salvo na Nuvem!', 'success');
+            } catch(error) { window.showToast('Erro ao salvar código.', 'error'); console.error(error); }
         }
 
-        function editCode(idx) {
-            const c = db.codes[idx];
-            document.getElementById('code-id').value = c.id || '';
-            document.getElementById('code-desc').value = c.desc || '';
-            document.getElementById('code-unit').value = c.unit || 'und';
-            document.getElementById('code-price').value = c.price || '';
-            document.getElementById('edit-index').value = idx;
-            showTab('cadastros');
-            showToast('Modo de edição ativado. Salve para confirmar.', 'info');
+        window.deleteCodeCloud = async function(codeId) {
+            if(confirm(`Excluir permanentemente o código ${codeId}?`)) { 
+                try {
+                    await deleteDoc(doc(firestore, 'codes', codeId));
+                    window.showToast('Excluído da Nuvem.', 'success'); 
+                } catch(e) { window.showToast('Erro ao excluir.', 'error'); }
+            }
         }
 
-        /* --------------------------------------------------------
-           MÓDULO: NOVO LANÇAMENTO (NOVA SS) E VERIFICAÇÕES
-           -------------------------------------------------------- */
+        window.saveFullLaunch = async function() {
+            if (window.editingRow) return window.showToast('Confirme a edição do item!', 'error');
+            const form = document.getElementById('launch-form');
+            if(!form.reportValidity()) return window.showToast('Preencha tudo.', 'error');
+            if(document.getElementById('launch-ss').value.trim() === '') return window.showToast('SS vazia!', 'error');
 
-        function closeSearchModal() { document.getElementById('search-modal').classList.add('hidden'); }
+            const rows = document.querySelectorAll('#items-in-launch tr'); const currentItems = [];
+            rows.forEach(r => {
+                if (r.id !== 'empty-row') {
+                    currentItems.push({
+                        code: r.cells[0].getAttribute('data-code'), desc: r.cells[1].getAttribute('data-desc'), qty: r.cells[2].getAttribute('data-qty'),
+                        comp: r.dataset.comp || '', larg: r.dataset.larg || '', dist: r.dataset.dist || '', prof: r.dataset.prof || ''
+                    });
+                }
+            });
+            if (currentItems.length === 0) return window.showToast('Adicione 1 item!', 'error');
 
-        function searchBy(type) {
+            const editId = document.getElementById('edit-launch-id').value;
+            const launchIdStr = editId ? String(editId) : String(Date.now() + Math.floor(Math.random() * 1000));
+            
+            const launchData = {
+                date: document.getElementById('launch-date').value, 
+                team: document.getElementById('launch-team').value, 
+                ss: document.getElementById('launch-ss').value.trim(), 
+                fiscal: document.getElementById('launch-fiscal').value,
+                addr: document.getElementById('launch-addr').value, 
+                obs: document.getElementById('launch-obs').value,
+                status: document.getElementById('launch-status').value, 
+                items: currentItems
+            };
+            
+            const btn = document.getElementById('btn-save-launch');
+            btn.innerHTML = 'A SALVAR...'; btn.disabled = true;
+
+            try {
+                await setDoc(doc(firestore, 'launches', launchIdStr), launchData);
+                
+                document.getElementById('edit-launch-id').value = ''; 
+                document.getElementById('items-in-launch').innerHTML = ''; 
+                window.checkEmptyTable();
+                
+                btn.innerHTML = '💾 GRAVAR NA NUVEM'; btn.className = 'md:w-3/4 bg-green-600 hover:bg-green-700 text-white p-2 rounded font-black text-base shadow-lg';
+                btn.disabled = false;
+                window.showToast('Lançamento Seguro na Nuvem!', 'success');
+            } catch(e) {
+                btn.innerHTML = '💾 GRAVAR NA NUVEM'; btn.disabled = false;
+                window.showToast('Erro de Conexão!', 'error'); console.error(e);
+            }
+        }
+
+        window.deleteLaunch = async function(id) { 
+            if(confirm('Excluir SS permanentemente?')) { 
+                try {
+                    await deleteDoc(doc(firestore, 'launches', String(id)));
+                    window.showToast('SS Excluída da Nuvem.', 'success');
+                } catch(e) { window.showToast('Erro ao excluir.', 'error'); }
+            }
+        }
+
+        // ==========================================
+        // RESTAURAÇÃO / MIGRAÇÃO JSON -> FIREBASE
+        // ==========================================
+        
+        window.handleFileSelect = async function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (event) => { 
+                try { 
+                    window.showToast('A enviar dados para a nuvem. Aguarde...', 'info');
+                    const importedDb = JSON.parse(event.target.result); 
+                    
+                    // 1. Migrar Auxiliares
+                    const newTeams = importedDb.teams || [];
+                    const newAddrs = importedDb.addresses || [];
+                    if(newTeams.length > 0 || newAddrs.length > 0) {
+                        await setDoc(docAux, { teams: newTeams, addresses: newAddrs }, { merge: true });
+                    }
+
+                    // 2. Migrar Códigos
+                    if(importedDb.codes && Array.isArray(importedDb.codes)) {
+                        for(const c of importedDb.codes) {
+                            if(c.id) await setDoc(doc(firestore, 'codes', String(c.id)), { desc: c.desc || '', unit: c.unit || '', price: c.price || '' });
+                        }
+                    }
+
+                    // 3. Migrar Lançamentos
+                    if(importedDb.launches && Array.isArray(importedDb.launches)) {
+                        for(const l of importedDb.launches) {
+                            if(l.id) {
+                                // Cria uma cópia sem o ID dentro dos dados (já que o ID será o nome do documento)
+                                const dataToSave = { ...l }; delete dataToSave.id;
+                                await setDoc(doc(firestore, 'launches', String(l.id)), dataToSave);
+                            }
+                        }
+                    }
+
+                    window.showToast('MIGRAÇÃO CONCLUÍDA COM SUCESSO!', 'success'); 
+                    document.getElementById('importFile').value = '';
+                } catch (err) { 
+                    window.showToast('Arquivo inválido ou erro de rede.', 'error'); 
+                    console.error(err);
+                } 
+            };
+            reader.readAsText(file);
+        }
+
+        // ==========================================
+        // LÓGICA DE INTERFACE E RENDERING 
+        // ==========================================
+
+        window.renderAux = function() {
+            const tableTeams = document.getElementById('table-teams');
+            if(tableTeams) {
+                tableTeams.innerHTML = window.db.teams.length === 0 ? '<tr><td colspan="2" class="p-4 text-center text-gray-400 italic">Nenhum</td></tr>' : 
+                window.db.teams.map((t, i) => `<tr class="hover:bg-gray-100 dark:hover:bg-gray-600"><td class="p-2 font-medium">${window.escapeHTML(t)}</td><td class="p-2 text-center whitespace-nowrap"><button onclick="editTeam(${i})" class="text-blue-500 hover:text-blue-700 font-bold mr-3">Alterar</button><button onclick="deleteTeam(${i})" class="text-red-500 hover:text-red-700 font-bold">Excluir</button></td></tr>`).join('');
+            }
+            const tableAddrs = document.getElementById('table-addresses');
+            if(tableAddrs) {
+                tableAddrs.innerHTML = window.db.addresses.length === 0 ? '<tr><td colspan="2" class="p-4 text-center text-gray-400 italic">Nenhum</td></tr>' : 
+                window.db.addresses.map((a, i) => `<tr class="hover:bg-gray-100 dark:hover:bg-gray-600"><td class="p-2 font-medium">${window.escapeHTML(a)}</td><td class="p-2 text-center whitespace-nowrap"><button onclick="editAddress(${i})" class="text-blue-500 hover:text-blue-700 font-bold mr-3">Alterar</button><button onclick="deleteAddress(${i})" class="text-red-500 hover:text-red-700 font-bold">Excluir</button></td></tr>`).join('');
+            }
+            const selectTeam = document.getElementById('launch-team');
+            if(selectTeam) { const cur = selectTeam.value; selectTeam.innerHTML = '<option value="">Selecione...</option>' + window.db.teams.map(t => `<option value="${window.escapeHTML(t)}">${window.escapeHTML(t)}</option>`).join(''); if(window.db.teams.includes(cur)) selectTeam.value = cur; }
+            const selectAddr = document.getElementById('launch-addr');
+            if(selectAddr) { const cur = selectAddr.value; selectAddr.innerHTML = '<option value="">Selecione...</option>' + window.db.addresses.map(a => `<option value="${window.escapeHTML(a)}">${window.escapeHTML(a)}</option>`).join(''); if(window.db.addresses.includes(cur)) selectAddr.value = cur; }
+            const relTeam = document.getElementById('rel-equipe');
+            if(relTeam) { const cur = relTeam.value; relTeam.innerHTML = '<option value="">Todas as Equipes...</option>' + window.db.teams.map(t => `<option value="${window.escapeHTML(t)}">${window.escapeHTML(t)}</option>`).join(''); if(window.db.teams.includes(cur)) relTeam.value = cur; }
+            const relAddr = document.getElementById('rel-addr');
+            if(relAddr) { const cur = relAddr.value; relAddr.innerHTML = '<option value="">Todos os Endereços...</option>' + window.db.addresses.map(a => `<option value="${window.escapeHTML(a)}">${window.escapeHTML(a)}</option>`).join(''); if(window.db.addresses.includes(cur)) relAddr.value = cur; }
+        }
+
+        window.updateUnitDatalist = function() {
+            const dataList = document.getElementById('unit-options');
+            if(!dataList) return;
+            const def = ['und', 'm2', 'm3', 'm', 'pç'];
+            const custom = window.db.codes.map(c => (c.unit || '').toLowerCase().trim()).filter(u => u && !def.includes(u));
+            const all = [...new Set([...def, ...custom])];
+            dataList.innerHTML = all.map(u => `<option value="${window.escapeHTML(u)}">`).join('');
+        }
+
+        window.editCode = function(codeIdStr) {
+            const c = window.db.codes.find(x => x.id === codeIdStr);
+            if(!c) return;
+            document.getElementById('code-id').value = c.id || ''; document.getElementById('code-desc').value = c.desc || '';
+            document.getElementById('code-unit').value = c.unit || 'und'; document.getElementById('code-price').value = c.price || '';
+            document.getElementById('edit-index').value = c.id; window.showTab('cadastros'); window.showToast('Modo de edição.', 'info');
+        }
+
+        window.closeSearchModal = function() { document.getElementById('search-modal').classList.add('hidden'); }
+        
+        window.searchBy = function(type) {
             const val = document.getElementById(type === 'ss' ? 'launch-ss' : 'launch-fiscal').value.trim();
-            if (!val) return showToast(`Preencha o campo de ${type.toUpperCase()} para pesquisar.`, 'warning');
-            
-            const found = db.launches.filter(l => (type === 'ss' ? l.ss === val : (l.fiscal || '').toLowerCase() === val.toLowerCase()));
+            if (!val) return window.showToast(`Preencha o campo.`, 'warning');
+            const found = window.db.launches.filter(l => (type === 'ss' ? l.ss === val : (l.fiscal || '').toLowerCase() === val.toLowerCase()));
             if (found.length > 0) {
                 let html = found.map(l => {
-                    let dateStr = l.date || '';
-                    if(dateStr.includes('-')) dateStr = `${dateStr.split('-')[2]}/${dateStr.split('-')[1]}/${dateStr.split('-')[0].slice(-2)}`;
-                    return `<div class="border border-blue-200 dark:border-gray-600 p-4 rounded-lg bg-white dark:bg-gray-800 flex flex-col md:flex-row justify-between items-center shadow-sm gap-3">
-                        <div class="text-center md:text-left w-full">
-                            <p class="font-black text-blue-800 dark:text-blue-400 text-lg">SS: ${escapeHTML(l.ss)}</p>
-                            <p class="text-sm text-gray-700 dark:text-gray-300 mt-1"><b>Data:</b> ${dateStr} &bull; <b>Fiscal:</b> ${escapeHTML(l.fiscal)} &bull; <b>Status:</b> <span class="font-bold ${l.status === 'Concluído' ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}">${l.status}</span></p>
-                        </div>
-                        <button onclick="editLaunch('${l.id}')" class="bg-blue-600 dark:bg-blue-700 text-white px-5 py-2 rounded-lg font-black hover:bg-blue-700 dark:hover:bg-blue-600 shadow-md w-full md:w-auto whitespace-nowrap">✏️ Editar Lançamento</button>
+                    let dateStr = l.date || ''; if(dateStr.includes('-')) dateStr = `${dateStr.split('-')[2]}/${dateStr.split('-')[1]}/${dateStr.split('-')[0].slice(-2)}`;
+                    return `<div class="border p-4 rounded-lg bg-white dark:bg-gray-800 flex flex-col md:flex-row justify-between items-center shadow-sm gap-3">
+                        <div class="text-left w-full"><p class="font-black text-blue-800 dark:text-blue-400">SS: ${window.escapeHTML(l.ss)}</p><p class="text-sm mt-1">Data: ${dateStr} &bull; Fiscal: ${window.escapeHTML(l.fiscal)} &bull; Status: <b>${l.status}</b></p></div>
+                        <button onclick="editLaunch('${l.id}')" class="bg-blue-600 text-white px-5 py-2 rounded-lg font-black">Editar</button>
                     </div>`;
                 }).join('');
-                document.getElementById('search-modal-content').innerHTML = html;
-                document.getElementById('search-modal').classList.remove('hidden');
-                showToast(`Encontrado ${found.length} registo(s).`, 'success');
-            } else {
-                showToast(`${type.toUpperCase()} livre! Nenhum lançamento encontrado.`, 'success');
-            }
+                document.getElementById('search-modal-content').innerHTML = html; document.getElementById('search-modal').classList.remove('hidden');
+                window.showToast(`Encontrado ${found.length} registo(s).`, 'success');
+            } else { window.showToast(`Livre!`, 'success'); }
         }
 
-        function filterCodes() {
+        window.filterCodes = function() {
             const term = document.getElementById('search-code').value.toLowerCase();
             const select = document.getElementById('launch-code');
             if(!select) return;
-            select.innerHTML = '<option value="" class="text-gray-400">Selecione um código da lista...</option>';
-            
+            select.innerHTML = '<option value="">Selecione...</option>';
             let found = false;
-            db.codes.filter(c => (c.id || '').toLowerCase().includes(term) || (c.desc || '').toLowerCase().includes(term)).forEach(c => {
-                select.innerHTML += `<option value="${escapeHTML(c.id)}">${escapeHTML(c.id)} - ${escapeHTML(c.desc)} (${escapeHTML(c.unit)})</option>`;
-                found = true;
+            window.db.codes.filter(c => (c.id || '').toLowerCase().includes(term) || (c.desc || '').toLowerCase().includes(term)).forEach(c => {
+                select.innerHTML += `<option value="${window.escapeHTML(c.id)}">${window.escapeHTML(c.id)} - ${window.escapeHTML(c.desc)}</option>`; found = true;
             });
-            if(!found && term.length > 0) {
-                select.innerHTML = '<option value="" class="text-red-400">Nenhum código encontrado com esta descrição.</option>';
-            }
+            if(!found && term.length > 0) select.innerHTML = '<option value="">Nenhum encontrado.</option>';
         }
 
-        function onCodeSelect() {
+        window.onCodeSelect = function() {
             const codeSelect = document.getElementById('launch-code');
             const container = document.getElementById('dyn-fields');
             container.innerHTML = ''; 
-            if(!codeSelect || !codeSelect.value) { document.getElementById('qty-val')?.remove(); return; }
-            
-            const code = db.codes.find(c => c.id === codeSelect.value);
+            if(!codeSelect || !codeSelect.value) return;
+            const code = window.db.codes.find(c => c.id === codeSelect.value);
             if(!code) return;
-            
             const unitLower = (code.unit || '').toLowerCase().trim();
 
             if(unitLower === 'm2') {
                 container.innerHTML = `
-                    <div><label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-0.5 uppercase">Comprimento (m)</label><input type="number" step="0.01" id="dim-comp" placeholder="0.00" class="w-full border dark:border-gray-600 p-1.5 text-sm rounded bg-white dark:bg-gray-700 dark:text-white focus:border-blue-500 outline-none" oninput="calcQty()"></div>
-                    <div><label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-0.5 uppercase">Largura (m)</label><input type="number" step="0.01" id="dim-larg" placeholder="0.00" class="w-full border dark:border-gray-600 p-1.5 text-sm rounded bg-white dark:bg-gray-700 dark:text-white focus:border-blue-500 outline-none" oninput="calcQty()"></div>
-                    <div><label class="block text-[11px] font-bold text-blue-700 dark:text-blue-400 mb-0.5 uppercase">Área Total (m²)</label><input readonly id="qty-val" class="w-full border border-blue-200 dark:border-blue-800 p-1.5 text-sm rounded bg-blue-50 dark:bg-blue-900/30 font-bold text-blue-900 dark:text-blue-300" placeholder="0.00"></div>`;
+                    <div><label class="block text-[11px] font-bold mb-0.5">Comprimento (m)</label><input type="number" step="0.01" id="dim-comp" class="w-full border p-1.5 rounded text-black" oninput="calcQty()"></div>
+                    <div><label class="block text-[11px] font-bold mb-0.5">Largura (m)</label><input type="number" step="0.01" id="dim-larg" class="w-full border p-1.5 rounded text-black" oninput="calcQty()"></div>
+                    <div><label class="block text-[11px] font-bold mb-0.5 text-blue-700">Área (m²)</label><input readonly id="qty-val" class="w-full border p-1.5 rounded bg-blue-50 text-blue-900 font-bold"></div>`;
             } else if(unitLower === 'm3') {
                 container.innerHTML = `
-                    <div><label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-0.5 uppercase">Distância/Comp. (m)</label><input type="number" step="0.01" id="dim-dist" placeholder="0.00" class="w-full border dark:border-gray-600 p-1.5 text-sm rounded bg-white dark:bg-gray-700 dark:text-white focus:border-blue-500 outline-none" oninput="calcQty()"></div>
+                    <div><label class="block text-[11px] font-bold mb-0.5">Distância/Comp. (m)</label><input type="number" step="0.01" id="dim-dist" class="w-full border p-1.5 rounded text-black" oninput="calcQty()"></div>
                     <div class="grid grid-cols-2 gap-2">
-                        <div><label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-0.5 uppercase">Larg. (m)</label><input type="number" step="0.01" id="dim-larg" placeholder="0.00" class="w-full border dark:border-gray-600 p-1.5 text-sm rounded bg-white dark:bg-gray-700 dark:text-white focus:border-blue-500 outline-none" oninput="calcQty()"></div>
-                        <div><label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-0.5 uppercase">Prof. (m)</label><input type="number" step="0.01" id="dim-prof" placeholder="0.00" class="w-full border dark:border-gray-600 p-1.5 text-sm rounded bg-white dark:bg-gray-700 dark:text-white focus:border-blue-500 outline-none" oninput="calcQty()"></div>
+                        <div><label class="block text-[11px] font-bold mb-0.5">Larg. (m)</label><input type="number" step="0.01" id="dim-larg" class="w-full border p-1.5 rounded text-black" oninput="calcQty()"></div>
+                        <div><label class="block text-[11px] font-bold mb-0.5">Prof. (m)</label><input type="number" step="0.01" id="dim-prof" class="w-full border p-1.5 rounded text-black" oninput="calcQty()"></div>
                     </div>
-                    <div><label class="block text-[11px] font-bold text-blue-700 dark:text-blue-400 mb-0.5 uppercase">Volume (m³)</label><input readonly id="qty-val" class="w-full border border-blue-200 dark:border-blue-800 p-1.5 text-sm rounded bg-blue-50 dark:bg-blue-900/30 font-bold text-blue-900 dark:text-blue-300" placeholder="0.00"></div>`;
+                    <div><label class="block text-[11px] font-bold mb-0.5 text-blue-700">Volume (m³)</label><input readonly id="qty-val" class="w-full border p-1.5 rounded bg-blue-50 text-blue-900 font-bold"></div>`;
             } else {
-                container.innerHTML = `
-                    <div class="col-span-3"><label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-0.5 uppercase">Quantidade (${escapeHTML(code.unit)})</label><input type="number" step="0.01" id="qty-val" placeholder="Ex: 5" required class="w-full border dark:border-gray-600 p-1.5 text-sm rounded bg-white dark:bg-gray-700 dark:text-white focus:border-blue-500 outline-none"></div>`;
+                container.innerHTML = `<div class="col-span-3"><label class="block text-[11px] font-bold mb-0.5">Quantidade</label><input type="number" step="0.01" id="qty-val" required class="w-full border p-1.5 rounded text-black"></div>`;
             }
         }
 
-        function calcQty() {
+        window.calcQty = function() {
             const codeSelect = document.getElementById('launch-code');
             if(!codeSelect) return;
-            const code = db.codes.find(c => c.id === codeSelect.value);
+            const code = window.db.codes.find(c => c.id === codeSelect.value);
             if(!code) return;
             let res = 0;
             const unitLower = (code.unit || '').toLowerCase().trim();
-
             if(unitLower === 'm2') {
-                const comp = parseFloat(document.getElementById('dim-comp')?.value || 0);
-                const larg = parseFloat(document.getElementById('dim-larg')?.value || 0);
-                res = comp * larg;
+                res = parseFloat(document.getElementById('dim-comp')?.value || 0) * parseFloat(document.getElementById('dim-larg')?.value || 0);
             } else if(unitLower === 'm3') {
-                const dist = parseFloat(document.getElementById('dim-dist')?.value || 0);
-                const larg = parseFloat(document.getElementById('dim-larg')?.value || 0);
-                const prof = parseFloat(document.getElementById('dim-prof')?.value || 0);
-                res = dist * larg * prof;
+                res = parseFloat(document.getElementById('dim-dist')?.value || 0) * parseFloat(document.getElementById('dim-larg')?.value || 0) * parseFloat(document.getElementById('dim-prof')?.value || 0);
             }
             const qtyVal = document.getElementById('qty-val');
             if(qtyVal) qtyVal.value = res.toFixed(2);
         }
 
-        function checkEmptyTable() {
+        window.checkEmptyTable = function() {
             const tbody = document.getElementById('items-in-launch');
             if (tbody.children.length === 0 || (tbody.children.length === 1 && tbody.children[0].id === 'empty-row')) {
-                tbody.innerHTML = '<tr id="empty-row"><td colspan="4" class="text-center text-gray-400 italic py-2">Nenhum item adicionado ainda.</td></tr>';
+                tbody.innerHTML = '<tr id="empty-row"><td colspan="4" class="text-center text-gray-400 italic py-2">Vazio.</td></tr>';
             }
         }
 
-        let editingRow = null;
-
-        function resetItemEditMode() {
-            if (editingRow) {
-                editingRow.classList.remove('bg-yellow-100', 'dark:bg-yellow-900/40');
-                editingRow = null;
-            }
-            const addBtn = document.getElementById('btn-add-item');
-            if (addBtn) {
-                addBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg> Adicionar Item à Lista`;
-                addBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
-                addBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
-            }
+        window.editingRow = null;
+        window.resetItemEditMode = function() {
+            if (window.editingRow) { window.editingRow.classList.remove('bg-yellow-100', 'dark:bg-yellow-900/40'); window.editingRow = null; }
+            const btn = document.getElementById('btn-add-item');
+            if (btn) { btn.innerHTML = 'Adicionar Item à Lista'; btn.classList.remove('bg-orange-500'); btn.classList.add('bg-blue-600'); }
         }
 
-        function removeItemRow(btn) {
+        window.removeItemRow = function(btn) {
             const row = btn.parentElement.parentElement;
-            if (editingRow === row) {
-                resetItemEditMode();
-                document.getElementById('search-code').value = '';
-                document.getElementById('launch-code').innerHTML = '<option value="" class="text-gray-400">Selecione um código da lista...</option>';
-                document.getElementById('dyn-fields').innerHTML = '';
-            }
-            row.remove();
-            checkEmptyTable();
+            if (window.editingRow === row) { window.resetItemEditMode(); document.getElementById('search-code').value = ''; document.getElementById('dyn-fields').innerHTML = ''; }
+            row.remove(); window.checkEmptyTable();
         }
 
-        function editItemRow(btn) {
+        window.editItemRow = function(btn) {
             const row = btn.closest('tr');
-            if (editingRow) editingRow.classList.remove('bg-yellow-100', 'dark:bg-yellow-900/40');
-            
-            editingRow = row;
-            row.classList.add('bg-yellow-100', 'dark:bg-yellow-900/40'); 
-
+            if (window.editingRow) window.editingRow.classList.remove('bg-yellow-100');
+            window.editingRow = row; row.classList.add('bg-yellow-100'); 
             const codeId = row.cells[0].getAttribute('data-code');
             const qty = row.cells[2].getAttribute('data-qty');
-            
-            document.getElementById('search-code').value = codeId;
-            filterCodes();
-            document.getElementById('launch-code').value = codeId;
-            onCodeSelect();
-            
+            document.getElementById('search-code').value = codeId; window.filterCodes();
+            document.getElementById('launch-code').value = codeId; window.onCodeSelect();
             if(row.dataset.comp && document.getElementById('dim-comp')) document.getElementById('dim-comp').value = row.dataset.comp;
             if(row.dataset.larg && document.getElementById('dim-larg')) document.getElementById('dim-larg').value = row.dataset.larg;
             if(row.dataset.dist && document.getElementById('dim-dist')) document.getElementById('dim-dist').value = row.dataset.dist;
             if(row.dataset.prof && document.getElementById('dim-prof')) document.getElementById('dim-prof').value = row.dataset.prof;
             if (document.getElementById('qty-val')) document.getElementById('qty-val').value = qty;
-
-            const addBtn = document.getElementById('btn-add-item');
-            if (addBtn) {
-                addBtn.innerHTML = '🔄 Confirmar Alteração';
-                addBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-                addBtn.classList.add('bg-orange-500', 'hover:bg-orange-600');
-            }
-            showToast('Modo de edição do item. Modifique os valores e confirme!', 'info');
+            const btnA = document.getElementById('btn-add-item');
+            if (btnA) { btnA.innerHTML = '🔄 Confirmar'; btnA.classList.remove('bg-blue-600'); btnA.classList.add('bg-orange-500'); }
         }
 
-        function addItemToLaunch() {
-            const codeSelect = document.getElementById('launch-code');
-            const codeId = codeSelect ? codeSelect.value : '';
-            if (!codeId) return showToast('Selecione um código/serviço da lista primeiro!', 'warning');
-
-            const qtyInput = document.getElementById('qty-val');
-            const qty = qtyInput ? qtyInput.value : '';
-            if(!qty || parseFloat(qty) <= 0) return showToast('Preencha as dimensões para calcular a quantidade!', 'error');
-
-            const codeObj = db.codes.find(c => c.id === codeId);
-            if(!codeObj) return;
+        window.addItemToLaunch = function() {
+            const codeId = document.getElementById('launch-code') ? document.getElementById('launch-code').value : '';
+            if (!codeId) return window.showToast('Selecione um código!', 'warning');
+            const qty = document.getElementById('qty-val') ? document.getElementById('qty-val').value : '';
+            if(!qty || parseFloat(qty) <= 0) return window.showToast('Preencha as dimensões!', 'error');
+            const codeObj = window.db.codes.find(c => c.id === codeId); if(!codeObj) return;
             
             const tbody = document.getElementById('items-in-launch');
-            const emptyRow = document.getElementById('empty-row');
-            if (emptyRow) emptyRow.remove();
+            const emptyRow = document.getElementById('empty-row'); if (emptyRow) emptyRow.remove();
 
-            const safeCode = escapeHTML(codeId);
-            const safeDesc = escapeHTML(codeObj.desc);
-            const safeQty = escapeHTML(qty);
-
-            const dimComp = document.getElementById('dim-comp') ? document.getElementById('dim-comp').value : '';
-            const dimLarg = document.getElementById('dim-larg') ? document.getElementById('dim-larg').value : '';
-            const dimDist = document.getElementById('dim-dist') ? document.getElementById('dim-dist').value : '';
-            const dimProf = document.getElementById('dim-prof') ? document.getElementById('dim-prof').value : '';
-
-            let targetRow = editingRow || document.createElement('tr');
-            
-            targetRow.dataset.comp = dimComp;
-            targetRow.dataset.larg = dimLarg;
-            targetRow.dataset.dist = dimDist;
-            targetRow.dataset.prof = dimProf;
+            let targetRow = window.editingRow || document.createElement('tr');
+            targetRow.dataset.comp = document.getElementById('dim-comp') ? document.getElementById('dim-comp').value : '';
+            targetRow.dataset.larg = document.getElementById('dim-larg') ? document.getElementById('dim-larg').value : '';
+            targetRow.dataset.dist = document.getElementById('dim-dist') ? document.getElementById('dim-dist').value : '';
+            targetRow.dataset.prof = document.getElementById('dim-prof') ? document.getElementById('dim-prof').value : '';
 
             targetRow.innerHTML = `
-                <td data-code="${safeCode}" class="font-bold text-gray-700 dark:text-gray-200 py-1.5">${safeCode}</td>
-                <td data-desc="${safeDesc}" class="py-1.5 truncate max-w-[200px]" title="${safeDesc}">${safeDesc}</td>
-                <td data-qty="${safeQty}" class="font-bold text-blue-700 dark:text-blue-400 py-1.5">${safeQty} <span class="text-[10px] font-normal text-gray-500 dark:text-gray-400">${escapeHTML(codeObj.unit)}</span></td>
-                <td class="text-center py-1.5 whitespace-nowrap">
-                    <button type="button" onclick="editItemRow(this)" class="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-700 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500 font-bold transition-colors mr-1 text-[11px]" title="Editar este item">✏️ Editar</button>
-                    <button type="button" onclick="removeItemRow(this)" class="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded border border-red-200 dark:border-red-700 hover:bg-red-600 hover:text-white dark:hover:bg-red-500 font-bold transition-colors text-[11px]" title="Remover item">X</button>
+                <td data-code="${window.escapeHTML(codeId)}" class="font-bold py-1.5">${window.escapeHTML(codeId)}</td>
+                <td data-desc="${window.escapeHTML(codeObj.desc)}" class="py-1.5 break-words max-w-[200px]">${window.escapeHTML(codeObj.desc)}</td>
+                <td data-qty="${window.escapeHTML(qty)}" class="font-bold text-blue-700 py-1.5">${window.escapeHTML(qty)}</td>
+                <td class="text-center py-1.5">
+                    <button type="button" onclick="editItemRow(this)" class="bg-blue-50 text-blue-600 px-2 rounded border border-blue-200">Editar</button>
+                    <button type="button" onclick="removeItemRow(this)" class="bg-red-50 text-red-600 px-2 rounded border border-red-200">X</button>
                 </td>
             `;
-
-            if (editingRow) {
-                showToast(`Item ${safeCode} atualizado com sucesso!`, 'success');
-                resetItemEditMode(); 
-            } else {
-                tbody.appendChild(targetRow);
-                showToast(`Item ${safeCode} adicionado à SS!`, 'success');
-            }
-
-            document.getElementById('search-code').value = '';
-            codeSelect.innerHTML = '<option value="" class="text-gray-400">Selecione um código da lista...</option>';
-            document.getElementById('dyn-fields').innerHTML = '';
-            filterCodes();
-        }
-
-        function editLaunch(id) {
-            try {
-                resetItemEditMode();
-                const l = db.launches.find(x => String(x.id) === String(id));
-                if(!l) return showToast('Lançamento não encontrado.', 'error');
-                
-                closeSearchModal();
-                document.getElementById('edit-launch-id').value = id;
-                document.getElementById('launch-date').value = l.date || '';
-                document.getElementById('launch-team').value = l.team || '';
-                document.getElementById('launch-ss').value = l.ss || '';
-                document.getElementById('launch-fiscal').value = l.fiscal || '';
-                document.getElementById('launch-addr').value = l.addr || '';
-                document.getElementById('launch-obs').value = l.obs || '';
-                document.getElementById('launch-status').value = l.status || 'Pendente';
-                
-                const tbody = document.getElementById('items-in-launch');
-                tbody.innerHTML = '';
-                
-                const items = Array.isArray(l.items) ? l.items : [];
-                items.forEach(i => {
-                    if (!i || !i.code) return; 
-                    const safeCode = escapeHTML(i.code);
-                    const safeDesc = escapeHTML(i.desc);
-                    const safeQty = escapeHTML(i.qty);
-
-                    const row = document.createElement('tr');
-                    row.dataset.comp = i.comp || '';
-                    row.dataset.larg = i.larg || '';
-                    row.dataset.dist = i.dist || '';
-                    row.dataset.prof = i.prof || '';
-
-                    row.innerHTML = `
-                        <td data-code="${safeCode}" class="font-bold text-gray-700 dark:text-gray-200 py-1.5">${safeCode}</td>
-                        <td data-desc="${safeDesc}" class="py-1.5 truncate max-w-[200px]" title="${safeDesc}">${safeDesc}</td>
-                        <td data-qty="${safeQty}" class="font-bold text-blue-700 dark:text-blue-400 py-1.5">${safeQty}</td>
-                        <td class="text-center py-1.5 whitespace-nowrap">
-                            <button type="button" onclick="editItemRow(this)" class="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-700 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500 font-bold transition-colors mr-1 text-[11px]" title="Editar este item">✏️ Editar</button>
-                            <button type="button" onclick="removeItemRow(this)" class="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded border border-red-200 dark:border-red-700 hover:bg-red-600 hover:text-white dark:hover:bg-red-500 font-bold transition-colors text-[11px]" title="Remover item">X</button>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
-                
-                checkEmptyTable();
-                const btn = document.getElementById('btn-save-launch');
-                btn.innerHTML = '🔄 ATUALIZAR LANÇAMENTO';
-                btn.className = 'md:w-3/4 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded text-base font-black shadow-lg transition-transform active:scale-[0.99]';
-                
-                showTab('lancamentos');
-                showToast('Modo de edição ativado.', 'info');
-            } catch (err) { console.error("Erro:", err); showToast('Erro ao carregar itens.', 'error'); }
-        }
-
-        function clearLaunchForm() {
-            resetItemEditMode();
-            document.getElementById('launch-form').reset();
-            document.getElementById('edit-launch-id').value = '';
-            document.getElementById('items-in-launch').innerHTML = '';
-            document.getElementById('dyn-fields').innerHTML = '';
-            document.getElementById('search-code').value = '';
-            checkEmptyTable();
-            filterCodes();
-
-            const btn = document.getElementById('btn-save-launch');
-            btn.innerHTML = '💾 GRAVAR LANÇAMENTO';
-            btn.className = 'md:w-3/4 bg-green-600 hover:bg-green-700 text-white p-2 rounded text-base font-black shadow-lg transition-transform active:scale-[0.99]';
-            showToast('Formulário de lançamento limpo.', 'info');
-        }
-
-        function saveFullLaunch() {
-            if (editingRow) return showToast('Você está editando um item. Confirme a alteração antes de Gravar!', 'error');
-
-            const form = document.getElementById('launch-form');
-            if(!form.reportValidity()) return showToast('Preencha os campos obrigatórios da SS.', 'error');
+            if (window.editingRow) { window.showToast(`Atualizado!`, 'success'); window.resetItemEditMode(); } 
+            else { tbody.appendChild(targetRow); window.showToast(`Adicionado!`, 'success'); }
             
-            // Segurança extra para campo vazio
-            if(document.getElementById('launch-ss').value.trim() === '') return showToast('Atenção: A SS não pode ficar em branco!', 'error');
+            document.getElementById('search-code').value = '';
+            document.getElementById('launch-code').innerHTML = '<option value="">Selecione...</option>';
+            document.getElementById('dyn-fields').innerHTML = ''; window.filterCodes();
+        }
 
-            const rows = document.querySelectorAll('#items-in-launch tr');
-            const currentItems = [];
-            rows.forEach(r => {
-                if (r.id !== 'empty-row') {
-                    currentItems.push({
-                        code: r.cells[0].getAttribute('data-code') || r.cells[0].textContent.trim(), 
-                        desc: r.cells[1].getAttribute('data-desc') || r.cells[1].textContent.trim(), 
-                        qty: r.cells[2].getAttribute('data-qty') || r.cells[2].textContent.split(' ')[0].trim(),
-                        comp: r.dataset.comp || '', larg: r.dataset.larg || '', dist: r.dataset.dist || '', prof: r.dataset.prof || ''
-                    });
-                }
+        window.editLaunch = function(id) {
+            window.resetItemEditMode(); const l = window.db.launches.find(x => String(x.id) === String(id));
+            if(!l) return window.showToast('Não encontrado.', 'error');
+            window.closeSearchModal();
+            document.getElementById('edit-launch-id').value = id; document.getElementById('launch-date').value = l.date || '';
+            document.getElementById('launch-team').value = l.team || ''; document.getElementById('launch-ss').value = l.ss || '';
+            document.getElementById('launch-fiscal').value = l.fiscal || ''; document.getElementById('launch-addr').value = l.addr || '';
+            document.getElementById('launch-obs').value = l.obs || ''; document.getElementById('launch-status').value = l.status || 'Pendente';
+            
+            const tbody = document.getElementById('items-in-launch'); tbody.innerHTML = '';
+            const items = Array.isArray(l.items) ? l.items : [];
+            items.forEach(i => {
+                if (!i || !i.code) return; 
+                const row = document.createElement('tr');
+                row.dataset.comp = i.comp || ''; row.dataset.larg = i.larg || '';
+                row.dataset.dist = i.dist || ''; row.dataset.prof = i.prof || '';
+                row.innerHTML = `<td data-code="${window.escapeHTML(i.code)}" class="font-bold py-1.5">${window.escapeHTML(i.code)}</td><td data-desc="${window.escapeHTML(i.desc)}" class="py-1.5 break-words max-w-[200px]">${window.escapeHTML(i.desc)}</td><td data-qty="${window.escapeHTML(i.qty)}" class="font-bold text-blue-700 py-1.5">${window.escapeHTML(i.qty)}</td><td class="text-center py-1.5"><button type="button" onclick="editItemRow(this)" class="bg-blue-50 text-blue-600 px-2 rounded border">Editar</button> <button type="button" onclick="removeItemRow(this)" class="bg-red-50 text-red-600 px-2 rounded border">X</button></td>`;
+                tbody.appendChild(row);
             });
-
-            if (currentItems.length === 0) return showToast('Adicione pelo menos 1 item na lista!', 'error');
-
-            const editId = document.getElementById('edit-launch-id').value;
-            const launch = {
-                id: editId ? parseInt(editId) : Date.now(),
-                date: document.getElementById('launch-date').value,
-                team: document.getElementById('launch-team').value, 
-                ss: document.getElementById('launch-ss').value.trim(),
-                fiscal: document.getElementById('launch-fiscal').value,
-                addr: document.getElementById('launch-addr').value, 
-                obs: document.getElementById('launch-obs').value,
-                status: document.getElementById('launch-status').value,
-                items: currentItems
-            };
-            
-            if (editId) {
-                const index = db.launches.findIndex(x => String(x.id) === String(editId));
-                if (index > -1) db.launches[index] = launch;
-                showToast('Lançamento atualizado com sucesso!', 'success');
-            } else {
-                db.launches.push(launch);
-                showToast('Lançamento salvo com sucesso!', 'success');
-            }
-            
-            saveData();
-            
-            document.getElementById('edit-launch-id').value = '';
-            document.getElementById('items-in-launch').innerHTML = '';
-            checkEmptyTable();
-            document.getElementById('search-code').value = '';
-            filterCodes();
-
-            const btn = document.getElementById('btn-save-launch');
-            btn.innerHTML = '💾 GRAVAR LANÇAMENTO';
-            btn.className = 'md:w-3/4 bg-green-600 hover:bg-green-700 text-white p-2 rounded text-base font-black shadow-lg transition-transform active:scale-[0.99]';
+            window.checkEmptyTable();
+            const btn = document.getElementById('btn-save-launch'); btn.innerHTML = '🔄 ATUALIZAR NA NUVEM'; btn.className = 'md:w-3/4 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded font-black text-base shadow-lg';
+            window.showTab('lancamentos'); window.showToast('Modo edição.', 'info');
         }
 
-        function deleteLaunch(id) { 
-            if(confirm('Tem certeza absoluta que deseja excluir todo o registro desta SS e seus itens?')) {
-                db.launches = db.launches.filter(l => String(l.id) !== String(id)); 
-                saveData(); 
-                showToast('Lançamento excluído com sucesso.', 'success');
-            }
+        window.clearLaunchForm = function() {
+            window.resetItemEditMode(); document.getElementById('launch-form').reset();
+            document.getElementById('edit-launch-id').value = ''; document.getElementById('items-in-launch').innerHTML = '';
+            document.getElementById('dyn-fields').innerHTML = ''; document.getElementById('search-code').value = '';
+            window.checkEmptyTable(); window.filterCodes();
+            const btn = document.getElementById('btn-save-launch'); btn.innerHTML = '💾 GRAVAR NA NUVEM'; btn.className = 'md:w-3/4 bg-green-600 hover:bg-green-700 text-white p-2 rounded font-black text-base shadow-lg';
         }
 
-        // TABELA DE HISTÓRICO
-        function clearHistoryFilter() {
-            document.getElementById('search-hist').value = '';
-            updateHistoryTable();
-            showToast('Filtro de busca limpo.', 'info');
-        }
+        window.clearHistoryFilter = function() { document.getElementById('search-hist').value = ''; window.updateHistoryTable(); }
 
-        function updateHistoryTable() {
+        window.updateHistoryTable = function() {
             const term = document.getElementById('search-hist').value.toLowerCase();
-            let filtered = db.launches.filter(l => 
-                (l.date && l.date.toLowerCase().includes(term)) || 
-                (l.ss && l.ss.toLowerCase().includes(term)) || 
-                (l.fiscal && l.fiscal.toLowerCase().includes(term)) || 
-                (l.status && l.status.toLowerCase().includes(term)) ||
+            let filtered = window.db.launches.filter(l => 
+                (l.date && l.date.toLowerCase().includes(term)) || (l.ss && l.ss.toLowerCase().includes(term)) || 
+                (l.fiscal && l.fiscal.toLowerCase().includes(term)) || (l.status && l.status.toLowerCase().includes(term)) ||
                 (l.team && l.team.toLowerCase().includes(term)) ||
                 (l.items && Array.isArray(l.items) && l.items.some(i => (i.code && i.code.toLowerCase().includes(term)) || (i.desc && i.desc.toLowerCase().includes(term))))
             );
             
-            // NOVIDADE: Ordenar por ID mais recente (garante que os últimos apareçam primeiro na busca)
+            // Ordenar por data mais recente -> ID maior
             filtered.sort((a, b) => b.id - a.id);
             
             document.getElementById('table-launches').innerHTML = filtered.map(l => {
                 const safeItems = Array.isArray(l.items) ? l.items : [];
-                const codeHtml = safeItems.map(i => `<div class="px-3 py-2 border-b border-gray-200 dark:border-gray-700 last:border-0 font-bold text-blue-700 dark:text-blue-400 truncate" title="${escapeHTML(i.code)}">${escapeHTML(i.code)}</div>`).join('');
-                const descHtml = safeItems.map(i => {
-                    let desc = escapeHTML(i.desc || "");
-                    let shortDesc = desc.length > 60 ? desc.substring(0, 60) + '...' : desc;
-                    return `<div class="px-3 py-2 border-b border-gray-200 dark:border-gray-700 last:border-0 truncate w-full" title="${desc}">${shortDesc}</div>`;
-                }).join('');
-                const qtyHtml = safeItems.map(i => `<div class="px-3 py-2 border-b border-gray-200 dark:border-gray-700 last:border-0 truncate text-center font-medium">${escapeHTML(i.qty)}</div>`).join('');
+                const codeHtml = safeItems.map(i => `<div class="px-3 py-2 border-b font-bold truncate">${window.escapeHTML(i.code)}</div>`).join('');
+                const descHtml = safeItems.map(i => `<div class="px-3 py-2 border-b truncate" title="${window.escapeHTML(i.desc)}">${window.escapeHTML(i.desc).substring(0, 60)}</div>`).join('');
+                const qtyHtml = safeItems.map(i => `<div class="px-3 py-2 border-b text-center font-medium">${window.escapeHTML(i.qty)}</div>`).join('');
+                let dateStr = l.date || ''; if(dateStr.includes('-')){ const p = dateStr.split('-'); dateStr = `${p[2]}/${p[1]}/${p[0].slice(-2)}`; }
 
-                let dateStr = l.date || '';
-                if(dateStr.includes('-')){ const parts = dateStr.split('-'); dateStr = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; }
-
-                let addr = escapeHTML(l.addr || "");
-                let shortAddr = addr.length > 30 ? addr.substring(0, 30) + '...' : addr;
-
-                return `<tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group">
-                    <td class="font-medium px-3 py-3 whitespace-nowrap">${dateStr}</td>
-                    <td class="px-3 py-3 whitespace-nowrap">${escapeHTML(l.team)}</td>
-                    <td class="font-bold text-gray-700 dark:text-gray-200 px-3 py-3 whitespace-nowrap">${escapeHTML(l.ss)}</td>
-                    <td class="px-3 py-3 whitespace-nowrap">${escapeHTML(l.fiscal)}</td>
-                    <td class="px-3 py-3 truncate max-w-[200px]" title="${addr}">${shortAddr}</td>
-                    <td class="p-0 align-top bg-white dark:bg-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-gray-700/50 border-x border-gray-100 dark:border-gray-700">${codeHtml}</td>
-                    <td class="p-0 align-top bg-white dark:bg-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-gray-700/50 border-r border-gray-100 dark:border-gray-700 max-w-[400px]">${descHtml}</td>
-                    <td class="p-0 align-top bg-white dark:bg-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-gray-700/50 border-r border-gray-100 dark:border-gray-700">${qtyHtml}</td>
-                    <td class="px-3 py-3 text-xs text-gray-600 dark:text-gray-400 truncate max-w-[150px]" title="${escapeHTML(l.obs || "")}">${escapeHTML(l.obs || "").substring(0,35)}</td>
-                    <td class="text-center px-3 py-3 whitespace-nowrap"><span class="px-3 py-1 rounded-full text-xs font-bold border ${l.status === 'Concluído' ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' : 'bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800'}">${escapeHTML(l.status)}</span></td>
-                    <td class="text-center px-3 py-3 whitespace-nowrap">
-                        <button onclick="editLaunch('${l.id}')" class="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500 px-3 py-1 rounded transition-colors font-bold text-xs mr-1 shadow-sm border border-blue-200 dark:border-blue-700">Editar</button>
-                        <button onclick="deleteLaunch('${l.id}')" class="bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 hover:bg-red-500 hover:text-white dark:hover:bg-red-500 px-3 py-1 rounded transition-colors font-bold text-xs shadow-sm border border-red-200 dark:border-red-700">Excluir</button>
+                return `<tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td class="font-medium px-3 py-3">${dateStr}</td><td class="px-3 py-3">${window.escapeHTML(l.team)}</td>
+                    <td class="font-bold px-3 py-3">${window.escapeHTML(l.ss)}</td><td class="px-3 py-3">${window.escapeHTML(l.fiscal)}</td>
+                    <td class="px-3 py-3 truncate max-w-[200px]">${window.escapeHTML(l.addr).substring(0, 30)}</td>
+                    <td class="p-0 align-top bg-white dark:bg-gray-800 border-x">${codeHtml}</td>
+                    <td class="p-0 align-top bg-white dark:bg-gray-800 border-r max-w-[400px]">${descHtml}</td>
+                    <td class="p-0 align-top bg-white dark:bg-gray-800 border-r">${qtyHtml}</td>
+                    <td class="px-3 py-3 text-xs truncate max-w-[150px]">${window.escapeHTML(l.obs || "").substring(0,35)}</td>
+                    <td class="text-center px-3 py-3"><span class="px-3 py-1 rounded-full text-xs font-bold border">${window.escapeHTML(l.status)}</span></td>
+                    <td class="text-center px-3 py-3">
+                        <button onclick="editLaunch('${l.id}')" class="bg-blue-50 text-blue-600 px-3 py-1 rounded font-bold text-xs mr-1 border">Editar</button>
+                        <button onclick="deleteLaunch('${l.id}')" class="bg-red-50 text-red-500 px-3 py-1 rounded font-bold text-xs border">Excluir</button>
                     </td>
                 </tr>`;
             }).join('');
         }
         
-        // NOVIDADE: GERAR A TABELA DO DASHBOARD
-        function updateDashboardRecent() {
-            const tbody = document.getElementById('table-recentes');
-            if(!tbody) return;
-            
-            // Pega apenas os 5 lançamentos mais recentes para o Dashboard
-            const recentes = [...db.launches].sort((a, b) => b.id - a.id).slice(0, 5);
-
-            if(recentes.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400 italic">Nenhum lançamento registado.</td></tr>';
-                return;
-            }
-
+        window.updateDashboardRecent = function() {
+            const tbody = document.getElementById('table-recentes'); if(!tbody) return;
+            const recentes = [...window.db.launches].sort((a, b) => b.id - a.id).slice(0, 5);
+            if(recentes.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400 italic">Nenhum.</td></tr>'; return; }
             tbody.innerHTML = recentes.map(l => {
-                let dateStr = l.date || '';
-                if(dateStr.includes('-')){ const parts = dateStr.split('-'); dateStr = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; }
-                
-                const statusBadge = `<span class="px-3 py-1 rounded-full text-xs font-bold border ${l.status === 'Concluído' ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' : 'bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800'}">${escapeHTML(l.status)}</span>`;
-
-                return `<tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                    <td class="font-medium px-3 py-3 whitespace-nowrap">${dateStr}</td>
-                    <td class="font-bold text-gray-700 dark:text-gray-200 px-3 py-3 whitespace-nowrap">${escapeHTML(l.ss)}</td>
-                    <td class="px-3 py-3">${escapeHTML(l.team)}</td>
-                    <td class="px-3 py-3 text-center">${statusBadge}</td>
+                let dateStr = l.date || ''; if(dateStr.includes('-')){ const p = dateStr.split('-'); dateStr = `${p[2]}/${p[1]}/${p[0].slice(-2)}`; }
+                return `<tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td class="font-medium px-3 py-3">${dateStr}</td><td class="font-bold px-3 py-3">${window.escapeHTML(l.ss)}</td>
+                    <td class="px-3 py-3">${window.escapeHTML(l.team)}</td><td class="px-3 py-3 text-center"><span class="px-3 py-1 rounded-full text-xs font-bold border">${window.escapeHTML(l.status)}</span></td>
                 </tr>`;
             }).join('');
         }
 
-        /* --------------------------------------------------------
-           MÓDULO DE RELATÓRIOS (SINTÉTICO E ANALÍTICO)
-           -------------------------------------------------------- */
+        window.updateUI = function() {
+            window.filterCodes(); window.updateUnitDatalist(); window.renderAux(); 
             
-        function gerarRelatorio(isPdf) {
+            // Ordenar tabela de códigos
+            const sortedCodes = [...window.db.codes].sort((a,b) => a.id.localeCompare(b.id));
+
+            document.getElementById('table-codes').innerHTML = sortedCodes.map((c, i) => `
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700"><td class="font-bold">${window.escapeHTML(c.id)}</td><td>${window.escapeHTML(c.desc || '').substring(0,60)}</td>
+                <td><span class="bg-gray-200 px-2 py-1 rounded text-xs font-bold uppercase">${window.escapeHTML(c.unit)}</span></td><td class="font-medium text-blue-800">R$ ${parseFloat(c.price).toFixed(2)}</td>
+                <td><button onclick="editCode('${c.id}')" class="text-blue-600 mr-3 font-bold text-sm">Editar</button> <button onclick="deleteCodeCloud('${c.id}')" class="text-red-500 font-bold text-sm">Excluir</button></td></tr>`).join('');
+            try {
+                window.updateHistoryTable(); window.updateDashboardRecent(); 
+                document.getElementById('count-launches').innerText = window.db.launches.length;
+                document.getElementById('count-pending').innerText = window.db.launches.filter(l => l.status === 'Pendente').length;
+                document.getElementById('count-completed').innerText = window.db.launches.filter(l => l.status === 'Concluído').length;
+            } catch(e) { console.error('Erro de UI:', e); }
+        }
+
+        window.exportData = function() {
+            const blob = new Blob([JSON.stringify(window.db)], {type: 'application/json'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `embasa_backup_cloud.json`; a.click(); 
+            window.showToast('Download do Backup concluído!', 'success');
+        }
+
+        // ====== RELATÓRIOS (Com quebras de página em PDF integradas) ======
+        window.gerarRelatorio = function(isPdf) {
             const tipoRelatorio = document.getElementById('rel-tipo').value;
             const dataIni = document.getElementById('rel-data-ini').value;
             const dataFim = document.getElementById('rel-data-fim').value;
@@ -1095,19 +1051,11 @@
             const addrFiltro = document.getElementById('rel-addr').value;
             const codeFiltro = document.getElementById('rel-code').value.toLowerCase().trim();
 
-            if (!dataIni || !dataFim) {
-                return showToast('Por favor, informe a Data Inicial e a Data Final.', 'warning');
-            }
+            if (!dataIni || !dataFim) return window.showToast('Informe Data Inicial e Final.', 'warning');
+            const dIni = new Date(dataIni + "T00:00:00"); const dFim = new Date(dataFim + "T23:59:59");
+            if (dIni > dFim) return window.showToast('Data Inicial maior que Final.', 'error');
 
-            const dIni = new Date(dataIni + "T00:00:00");
-            const dFim = new Date(dataFim + "T23:59:59");
-
-            if (dIni > dFim) {
-                return showToast('A Data Inicial não pode ser maior que a Data Final.', 'error');
-            }
-
-            // Filtrar Lançamentos
-            const lancamentosFiltrados = db.launches.filter(l => {
+            const lancamentosFiltrados = window.db.launches.filter(l => {
                 if (!l.date) return false;
                 const d = new Date(l.date + "T12:00:00");
                 if (d < dIni || d > dFim) return false;
@@ -1116,7 +1064,6 @@
                 return true;
             });
 
-            // Extrair Itens Filtrados
             let itensProcessados = [];
             lancamentosFiltrados.forEach(l => {
                 if (Array.isArray(l.items)) {
@@ -1128,219 +1075,157 @@
                             if (!matchCode && !matchDesc) return;
                         }
                         itensProcessados.push({
-                            date: l.date,
-                            dateObj: new Date(l.date + "T12:00:00"),
-                            team: l.team || 'N/I',
-                            ss: l.ss || 'N/I',
-                            fiscal: l.fiscal || 'N/I',
-                            addr: l.addr || 'ENDEREÇO NÃO INFORMADO',
-                            code: item.code,
-                            desc: item.desc,
-                            qty: parseFloat(item.qty) || 0,
-                            comp: item.comp || '',
-                            larg: item.larg || '',
-                            dist: item.dist || '',
-                            prof: item.prof || ''
+                            date: l.date, dateObj: new Date(l.date + "T12:00:00"), team: l.team || 'N/I',
+                            ss: l.ss || 'N/I', fiscal: l.fiscal || 'N/I', addr: l.addr || 'ENDEREÇO NÃO INFORMADO',
+                            code: item.code, desc: item.desc, qty: parseFloat(item.qty) || 0,
+                            comp: item.comp || '', larg: item.larg || '', dist: item.dist || '', prof: item.prof || ''
                         });
                     });
                 }
             });
 
-            if (itensProcessados.length === 0) {
-                return showToast('Nenhum item encontrado com os filtros aplicados neste período.', 'warning');
-            }
+            if (itensProcessados.length === 0) return window.showToast('Nenhum item encontrado no período.', 'warning');
 
-            const formataData = (dStr) => {
-                if(!dStr) return '';
-                const p = dStr.split('-');
-                return `${p[2]}/${p[1]}/${p[0]}`;
-            };
-
+            const formataData = (dStr) => { if(!dStr) return ''; const p = dStr.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; };
             const dataHoraAtual = new Date().toLocaleString('pt-BR');
-            const headerDoc = `
-                <div class="flex justify-between items-start mb-6 border-b-2 border-gray-800 pb-2">
-                    <div class="text-left text-[10px] text-gray-600 font-medium leading-tight">
-                        <strong>DashControler v1.2</strong><br>
-                        By Jocivaldo Sousa<br>
-                        Emitido em: ${dataHoraAtual}
-                    </div>
-                    <div class="text-right">
-                        <h2 class="text-lg font-black uppercase tracking-wider">${tipoRelatorio === 'analitico' ? 'Relatório Analítico por Endereço' : 'Relatório Sintético por Endereço'}</h2>
-                        <p class="text-xs font-bold mt-0.5 text-gray-700">Período: ${formataData(dataIni)} a ${formataData(dataFim)}</p>
-                    </div>
-                </div>
-            `;
-
-            let html = headerDoc;
+            let html = '';
 
             if (tipoRelatorio === 'analitico') {
-                // Ordenar do mais novo para o mais antigo por SS e data
                 itensProcessados.sort((a, b) => b.dateObj - a.dateObj || b.ss.localeCompare(a.ss));
+                const itensPorPagina = 18;
+                const totalPaginas = Math.ceil(itensProcessados.length / itensPorPagina) || 1;
+                
+                for (let pagina = 1; pagina <= totalPaginas; pagina++) {
+                    const inicio = (pagina - 1) * itensPorPagina;
+                    const fim = inicio + itensPorPagina;
+                    const itensPagina = itensProcessados.slice(inicio, fim);
+                    const isLastPage = (pagina === totalPaginas);
 
-                html += `
-                    <table class="w-full text-[9px] border-collapse border border-gray-300">
-                        <thead>
-                            <tr class="bg-gray-100 uppercase">
-                                <th class="border border-gray-300 p-1.5 text-left w-[60px]">Data</th>
-                                <th class="border border-gray-300 p-1.5 text-left w-[80px]">Equipe</th>
-                                <th class="border border-gray-300 p-1.5 text-left w-[70px]">SS</th>
-                                <th class="border border-gray-300 p-1.5 text-left w-[80px]">Fiscal</th>
-                                <th class="border border-gray-300 p-1.5 text-left">Endereço</th>
-                                <th class="border border-gray-300 p-1.5 text-left w-[70px]">Código</th>
-                                <th class="border border-gray-300 p-1.5 text-left">Descrição</th>
-                                <th class="border border-gray-300 p-1.5 text-center w-[40px]" title="Comprimento ou Distância">C/D</th>
-                                <th class="border border-gray-300 p-1.5 text-center w-[40px]" title="Largura">Larg</th>
-                                <th class="border border-gray-300 p-1.5 text-center w-[40px]" title="Profundidade">Prof</th>
-                                <th class="border border-gray-300 p-1.5 text-right w-[60px]">Quant.</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-
-                itensProcessados.forEach(i => {
-                    const codeDb = db.codes.find(c => c.id === i.code);
-                    const unit = codeDb ? codeDb.unit : '';
-                    
-                    // Tratar dimensões (Comprimento e Distância ocupam a mesma coluna visualmente)
-                    const valCD = i.comp ? i.comp : (i.dist ? i.dist : '-');
-                    const valLarg = i.larg ? i.larg : '-';
-                    const valProf = i.prof ? i.prof : '-';
-
+                    html += `<div style="${isLastPage ? '' : 'page-break-after: always;'} box-sizing: border-box; width: 100%; padding-bottom: 5px;">`;
                     html += `
-                        <tr>
-                            <td class="border border-gray-300 p-1.5 whitespace-nowrap font-semibold">${formataData(i.date)}</td>
-                            <td class="border border-gray-300 p-1.5 truncate max-w-[80px]" title="${escapeHTML(i.team)}">${escapeHTML(i.team)}</td>
-                            <td class="border border-gray-300 p-1.5 font-bold">${escapeHTML(i.ss)}</td>
-                            <td class="border border-gray-300 p-1.5 truncate max-w-[80px]" title="${escapeHTML(i.fiscal)}">${escapeHTML(i.fiscal)}</td>
-                            <td class="border border-gray-300 p-1.5 truncate max-w-[150px]" title="${escapeHTML(i.addr)}">${escapeHTML(i.addr)}</td>
-                            <td class="border border-gray-300 p-1.5 font-semibold">${escapeHTML(i.code)}</td>
-                            <td class="border border-gray-300 p-1.5 truncate max-w-[200px]" title="${escapeHTML(i.desc)}">${escapeHTML(i.desc)}</td>
-                            <td class="border border-gray-300 p-1.5 text-center text-gray-600 font-medium">${escapeHTML(valCD)}</td>
-                            <td class="border border-gray-300 p-1.5 text-center text-gray-600 font-medium">${escapeHTML(valLarg)}</td>
-                            <td class="border border-gray-300 p-1.5 text-center text-gray-600 font-medium">${escapeHTML(valProf)}</td>
-                            <td class="border border-gray-300 p-1.5 text-right font-bold">${i.qty.toFixed(2)} <span class="text-[7px] text-gray-500 font-normal">${escapeHTML(unit)}</span></td>
-                        </tr>
-                    `;
-                });
-                html += `</tbody></table>`;
-                document.getElementById('report-print-area').className = "bg-white text-black p-6 shadow-md w-full max-w-[297mm] min-h-[210mm]"; // Paisagem
+                        <div class="flex justify-between items-start mb-3 border-b-2 border-gray-800 pb-2">
+                            <div class="text-left text-[9px] text-gray-600 font-medium leading-tight"><strong>DashControler v1.3 (Cloud)</strong><br>By Jocivaldo Sousa<br>Emitido em: ${dataHoraAtual}</div>
+                            <div class="text-right"><h2 class="text-base font-black uppercase">Relatório Analítico por Endereço</h2><p class="text-[10px] font-bold mt-0.5">Período: ${formataData(dataIni)} a ${formataData(dataFim)}</p></div>
+                        </div>`;
+                    
+                    html += `
+                        <table class="w-full text-[8px] border-collapse border border-gray-400">
+                            <thead>
+                                <tr class="bg-gray-200 uppercase text-gray-800">
+                                    <th class="border border-gray-400 p-1 text-left w-[55px]">Data</th>
+                                    <th class="border border-gray-400 p-1 text-left w-[70px]">Equipa</th>
+                                    <th class="border border-gray-400 p-1 text-left w-[60px]">SS</th>
+                                    <th class="border border-gray-400 p-1 text-left w-[70px]">Fiscal</th>
+                                    <th class="border border-gray-400 p-1 text-left">Endereço</th>
+                                    <th class="border border-gray-400 p-1 text-left w-[60px]">Código</th>
+                                    <th class="border border-gray-400 p-1 text-left">Descrição</th>
+                                    <th class="border border-gray-400 p-1 text-center w-[35px]" title="Compr.">C/D</th>
+                                    <th class="border border-gray-400 p-1 text-center w-[35px]" title="Largura">Larg</th>
+                                    <th class="border border-gray-400 p-1 text-center w-[35px]" title="Profund.">Prof</th>
+                                    <th class="border border-gray-400 p-1 text-right w-[50px]">Quant.</th>
+                                    <th class="border border-gray-400 p-1 text-right w-[60px]">Total (R$)</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+                    itensPagina.forEach(i => {
+                        const codeDb = window.db.codes.find(c => c.id === i.code); const unit = codeDb ? codeDb.unit : '';
+                        const preco = codeDb ? parseFloat(codeDb.price) || 0 : 0;
+                        const valorTotalItem = (i.qty * preco).toFixed(2);
+                        const valCD = i.comp ? i.comp : (i.dist ? i.dist : '-'); const valLarg = i.larg ? i.larg : '-'; const valProf = i.prof ? i.prof : '-';
+                        
+                        html += `<tr>
+                            <td class="border border-gray-400 p-1 font-semibold">${formataData(i.date)}</td>
+                            <td class="border border-gray-400 p-1 break-words max-w-[70px]">${window.escapeHTML(i.team)}</td>
+                            <td class="border border-gray-400 p-1 font-bold">${window.escapeHTML(i.ss)}</td>
+                            <td class="border border-gray-400 p-1 break-words max-w-[70px]">${window.escapeHTML(i.fiscal)}</td>
+                            <td class="border border-gray-400 p-1 break-words">${window.escapeHTML(i.addr)}</td>
+                            <td class="border border-gray-400 p-1 font-semibold">${window.escapeHTML(i.code)}</td>
+                            <td class="border border-gray-400 p-1 break-words">${window.escapeHTML(i.desc)}</td>
+                            <td class="border border-gray-400 p-1 text-center text-gray-700 font-medium">${window.escapeHTML(valCD)}</td>
+                            <td class="border border-gray-400 p-1 text-center text-gray-700 font-medium">${window.escapeHTML(valLarg)}</td>
+                            <td class="border border-gray-400 p-1 text-center text-gray-700 font-medium">${window.escapeHTML(valProf)}</td>
+                            <td class="border border-gray-400 p-1 text-right font-bold whitespace-nowrap">${i.qty.toFixed(2)} <span class="text-[6px] text-gray-500">${window.escapeHTML(unit)}</span></td>
+                            <td class="border border-gray-400 p-1 text-right font-bold text-blue-800 whitespace-nowrap">${valorTotalItem}</td>
+                        </tr>`;
+                    });
+
+                    html += `</tbody></table><div class="mt-2 text-right text-[9px] font-bold text-gray-600">Página ${pagina} de ${totalPaginas}</div></div>`;
+                }
+                
+                document.getElementById('report-print-area').className = "bg-white text-black p-4 shadow-md w-full min-h-[210mm]"; 
+
             } else {
-                // SINTÉTICO (Agrupado)
                 const agrupado = {};
                 itensProcessados.forEach(i => {
                     if (!agrupado[i.addr]) agrupado[i.addr] = {};
                     const chaveItem = `${i.code} | ${i.desc}`;
-                    if (!agrupado[i.addr][chaveItem]) {
-                        agrupado[i.addr][chaveItem] = { code: i.code, desc: i.desc, qty: 0 };
-                    }
+                    if (!agrupado[i.addr][chaveItem]) agrupado[i.addr][chaveItem] = { code: i.code, desc: i.desc, qty: 0 };
                     agrupado[i.addr][chaveItem].qty += i.qty;
                 });
 
                 let enderecosOrdenados = Object.keys(agrupado).sort();
+                const maxLinhasPagina = 38;
+                let linhasAtuais = 0; let paginas = []; let paginaAtual = [];
+                
                 enderecosOrdenados.forEach(addr => {
-                    html += `
-                        <div class="mb-4 avoid-break">
-                            <h3 class="text-[10px] font-extrabold bg-gray-100 border border-gray-300 border-b-0 p-1.5 uppercase">📍 ENDEREÇO: ${escapeHTML(addr)}</h3>
-                            <table class="w-full text-[10px] border-collapse border border-gray-300">
-                                <thead>
-                                    <tr class="bg-gray-50">
-                                        <th class="border border-gray-300 p-1 text-left w-[90px]">Código</th>
-                                        <th class="border border-gray-300 p-1 text-left">Descrição</th>
-                                        <th class="border border-gray-300 p-1 text-right w-[70px]">Quant.</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                    `;
                     let itensOrdenados = Object.values(agrupado[addr]).sort((a,b) => a.code.localeCompare(b.code));
-                    itensOrdenados.forEach(item => {
-                        const codeDb = db.codes.find(c => c.id === item.code);
-                        const unit = codeDb ? codeDb.unit : '';
-                        html += `
-                            <tr>
-                                <td class="border border-gray-300 p-1 font-semibold">${escapeHTML(item.code)}</td>
-                                <td class="border border-gray-300 p-1">${escapeHTML(item.desc)}</td>
-                                <td class="border border-gray-300 p-1 text-right font-bold">${item.qty.toFixed(2)} <span class="text-[8px] text-gray-500 font-normal">${escapeHTML(unit)}</span></td>
-                            </tr>
-                        `;
-                    });
-                    html += `</tbody></table></div>`;
+                    let linhasDoEndereco = 2 + itensOrdenados.length + 1;
+                    if (linhasAtuais + linhasDoEndereco > maxLinhasPagina && paginaAtual.length > 0) { paginas.push(paginaAtual); paginaAtual = []; linhasAtuais = 0; }
+                    paginaAtual.push({ addr, itens: itensOrdenados }); linhasAtuais += linhasDoEndereco;
                 });
-                document.getElementById('report-print-area').className = "bg-white text-black p-8 shadow-md w-full max-w-[210mm] min-h-[297mm]"; // Retrato
+                if (paginaAtual.length > 0) paginas.push(paginaAtual);
+                
+                const totalPaginas = paginas.length;
+                
+                paginas.forEach((pag, index) => {
+                    const pagina = index + 1; const isLastPage = (pagina === totalPaginas);
+                    html += `<div style="${isLastPage ? '' : 'page-break-after: always;'} box-sizing: border-box; width: 100%; padding-bottom: 5px;">`;
+                    html += `
+                        <div class="flex justify-between items-start mb-4 border-b-2 border-gray-800 pb-2">
+                            <div class="text-left text-[9px] text-gray-600 font-medium leading-tight"><strong>DashControler v1.3 (Cloud)</strong><br>By Jocivaldo Sousa<br>Emitido em: ${dataHoraAtual}</div>
+                            <div class="text-right"><h2 class="text-base font-black uppercase">Relatório Sintético por Endereço</h2><p class="text-[10px] font-bold mt-0.5">Período: ${formataData(dataIni)} a ${formataData(dataFim)}</p></div>
+                        </div>`;
+                        
+                    pag.forEach(bloco => {
+                        let valorTotalEndereco = 0;
+                        html += `
+                            <div class="mb-3">
+                                <h3 class="text-[9px] font-extrabold bg-gray-200 border border-gray-400 border-b-0 p-1 uppercase text-gray-800">📍 ENDEREÇO: ${window.escapeHTML(bloco.addr)}</h3>
+                                <table class="w-full text-[8px] border-collapse border border-gray-400">
+                                    <thead><tr class="bg-gray-100"><th class="border border-gray-400 p-1 text-left w-[80px]">Código</th><th class="border border-gray-400 p-1 text-left">Descrição</th><th class="border border-gray-400 p-1 text-right w-[60px]">Quant.</th></tr></thead>
+                                    <tbody>
+                        `;
+                        bloco.itens.forEach(item => {
+                            const codeDb = window.db.codes.find(c => c.id === item.code); const unit = codeDb ? codeDb.unit : ''; const preco = codeDb ? parseFloat(codeDb.price) || 0 : 0; valorTotalEndereco += (preco * item.qty);
+                            html += `<tr><td class="border border-gray-400 p-1 font-semibold">${window.escapeHTML(item.code)}</td><td class="border border-gray-400 p-1">${window.escapeHTML(item.desc)}</td><td class="border border-gray-400 p-1 text-right font-bold">${item.qty.toFixed(2)} <span class="text-[6px] text-gray-500 font-normal">${window.escapeHTML(unit)}</span></td></tr>`;
+                        });
+                        html += `<tr class="bg-gray-100"><td colspan="2" class="border border-gray-400 p-1 text-right font-black uppercase text-gray-800">Total do Endereço (R$):</td><td class="border border-gray-400 p-1 text-right font-black text-blue-800">${valorTotalEndereco.toFixed(2)}</td></tr>`;
+                        html += `</tbody></table></div>`;
+                    });
+                    html += `<div class="mt-2 text-right text-[9px] font-bold text-gray-600">Página ${pagina} de ${totalPaginas}</div></div>`;
+                });
+                document.getElementById('report-print-area').className = "bg-white text-black p-4 shadow-md w-full min-h-[297mm]"; 
             }
 
             document.getElementById('report-print-area').innerHTML = html;
 
             if (isPdf) {
-                showToast('A gerar PDF, por favor aguarde...', 'info');
-                const elemento = document.getElementById('report-print-area');
-                const orientationStr = tipoRelatorio === 'analitico' ? 'landscape' : 'portrait';
-                const opt = {
-                    margin:       10,
-                    filename:     `Relatorio_${tipoRelatorio.toUpperCase()}_${dataIni}_a_${dataFim}.pdf`,
-                    image:        { type: 'jpeg', quality: 0.98 },
-                    html2canvas:  { scale: 2 },
-                    jsPDF:        { unit: 'mm', format: 'a4', orientation: orientationStr }
+                window.showToast('A gerar PDF, por favor aguarde...', 'info'); const elemento = document.getElementById('report-print-area');
+                const opt = { 
+                    margin: [5, 5, 5, 5], 
+                    filename: `Relatorio_${tipoRelatorio.toUpperCase()}_${dataIni}_a_${dataFim}.pdf`, 
+                    image: { type: 'jpeg', quality: 0.98 }, 
+                    html2canvas: { scale: 2, scrollY: 0, scrollX: 0 }, 
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: tipoRelatorio === 'analitico' ? 'landscape' : 'portrait' },
+                    pagebreak: { mode: 'css' }
                 };
-                
-                html2pdf().set(opt).from(elemento).save().then(() => {
-                    showToast('Download do PDF concluído!', 'success');
-                });
-            } else {
-                showToast('Relatório gerado com sucesso para visualização.', 'success');
-            }
+                html2pdf().set(opt).from(elemento).save().then(() => window.showToast('Download do PDF concluído!', 'success'));
+            } else { window.showToast('Relatório gerado com sucesso.', 'success'); }
         }
 
-        // Funções vitais finais
-        function updateUI() {
-            filterCodes();
-            updateUnitDatalist(); 
-            renderAux(); 
-            
-            document.getElementById('table-codes').innerHTML = db.codes.map((c, i) => `
-                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td class="font-bold text-gray-700 dark:text-gray-200">${escapeHTML(c.id)}</td>
-                    <td class="dark:text-gray-300">${escapeHTML(c.desc || '').substring(0,60)}</td>
-                    <td><span class="bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-1 rounded text-xs font-bold uppercase">${escapeHTML(c.unit)}</span></td>
-                    <td class="font-medium text-blue-800 dark:text-blue-400">R$ ${parseFloat(c.price).toFixed(2)}</td>
-                    <td>
-                        <button onclick="editCode(${i})" class="text-blue-600 dark:text-blue-400 mr-3 hover:underline font-bold text-sm">Editar</button>
-                        <button onclick="if(confirm('Excluir este código?')) { db.codes.splice(${i},1); saveData(); showToast('Código removido.', 'success'); }" class="text-red-500 dark:text-red-400 hover:underline font-bold text-sm">Excluir</button>
-                    </td>
-                </tr>`).join('');
-            
-            try {
-                updateHistoryTable();
-                updateDashboardRecent(); // Chama a nova função da tabela do Dashboard
-                
-                document.getElementById('count-launches').innerText = db.launches.length;
-                document.getElementById('count-pending').innerText = db.launches.filter(l => l.status === 'Pendente').length;
-                document.getElementById('count-completed').innerText = db.launches.filter(l => l.status === 'Concluído').length;
-            } catch(e) { console.error('Erro de UI:', e); }
-        }
-
-        function exportData() {
-            const blob = new Blob([JSON.stringify(db)], {type: 'application/json'});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `embasa_backup_${new Date().toISOString().slice(0,10)}.json`; a.click();
-            showToast('Backup gerado com sucesso!', 'success');
-        }
-
-        function handleFileSelect(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    db = JSON.parse(event.target.result);
-                    saveData();
-                    showToast('Dados restaurados perfeitamente!', 'success');
-                    setTimeout(() => location.reload(), 1500); 
-                } catch (err) { showToast('Arquivo inválido.', 'error'); }
-            };
-            reader.readAsText(file);
-        }
-
-        updateUI();
-        checkEmptyTable();
+        // Inicializar tabela vazia
+        window.checkEmptyTable();
     </script>
 </body>
 </html>
