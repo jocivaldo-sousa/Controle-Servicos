@@ -28,6 +28,58 @@
 </head>
 <body class="font-sans text-gray-800 dark:text-gray-200 bg-[#f8fafc] dark:bg-gray-900 relative min-h-screen">
 
+<!-- TELA DE LOGIN -->
+<div id="login-screen" class="fixed inset-0 bg-gray-100 dark:bg-gray-900 z-[9999] flex items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-md">
+        <h2 class="text-2xl font-black text-center text-blue-700 mb-6">DashControler</h2>
+        <p class="text-center text-gray-500 mb-6">Acesso Restrito</p>
+
+        <div class="mb-4">
+            <label class="block text-sm font-bold mb-2">Usuário</label>
+            <input type="text" id="login-user" class="w-full border p-3 rounded" placeholder="Usuário">
+        </div>
+
+        <div class="mb-6">
+            <label class="block text-sm font-bold mb-2">Senha</label>
+            <input type="password" id="login-pass" class="w-full border p-3 rounded" placeholder="Senha">
+        </div>
+
+        <button onclick="loginSystem()" class="w-full bg-blue-700 hover:bg-blue-800 text-white p-3 rounded font-black">
+            Entrar
+        </button>
+
+        <p id="login-error" class="text-red-600 text-sm text-center mt-4 hidden">
+            Usuário ou senha inválidos.
+        </p>
+    </div>
+</div>
+
+<script>
+window.loginSystem = function() {
+    const user = document.getElementById('login-user').value;
+    const pass = document.getElementById('login-pass').value;
+
+    if(user === 'Jocivaldo' && pass === '27101970') {
+        localStorage.setItem('dash_auth','ok');
+        document.getElementById('login-screen').style.display = 'none';
+    } else {
+        document.getElementById('login-error').classList.remove('hidden');
+    }
+}
+
+window.logoutSystem = function() {
+    localStorage.removeItem('dash_auth');
+    location.reload();
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+    if(localStorage.getItem('dash_auth') === 'ok') {
+        document.getElementById('login-screen').style.display = 'none';
+    }
+});
+</script>
+
+
     <!-- Tela de Carregamento da Nuvem -->
     <div id="cloud-loader" class="fixed inset-0 bg-[#f8fafc] dark:bg-gray-900 z-[100] flex flex-col items-center justify-center transition-opacity duration-500">
         <svg class="animate-spin h-16 w-16 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -94,7 +146,7 @@
                     <button onclick="document.getElementById('importFile').click()" class="bg-green-600 hover:bg-green-500 px-3 py-2 rounded text-sm font-bold shadow transition-transform active:scale-95" title="Enviar JSON para Nuvem">Migrar (Upload)</button>
                     
                     <button onclick="toggleTheme()" class="ml-2 bg-gray-800 dark:bg-yellow-500 text-white dark:text-gray-900 w-9 h-9 rounded-full font-black shadow-inner transition-transform active:scale-90 flex items-center justify-center text-lg border border-gray-600 dark:border-yellow-400" title="Alternar Dia/Noite">
-                        <span id="theme-icon">🌙</span>
+                        <span id="theme-icon">🌙</span></button><button onclick="logoutSystem()" class="ml-2 bg-red-600 hover:bg-red-700 px-3 py-2 rounded text-sm font-bold">Sair</button>
                     </button>
                 </div>
             </div>
